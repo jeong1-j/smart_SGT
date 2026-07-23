@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>smart-SGT · 교실 안전 관제</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* 로고에서 뽑은 학교 팔레트 — 교복 네이비 · 황동 · 갱지 · 칠판 */
+    --ink:#14213D; --brass:#C89A2B; --chalk:#2E4A42; --wood:#8A6A3E;
+    --disp:'Gowun Batang','Nanum Myeongjo',serif;
+    --ui:'Noto Sans KR','Malgun Gothic',-apple-system,sans-serif;
+    --bg:#F4F1E6; --card:#ffffff; --card2:#FAF7EF;
+    --line:#E4DDCB; --line2:#CFC5AB;
+    --tx:#14213D; --mut:#5A6884; --dim:#9AA3B5;
+    --g:#2E7D5B; --gs:#E4F2EA; --gl:#A9D6BF;
+    --y:#B8860B; --ys:#FBF1D8; --yl:#E8CF92;
+    --r:#C0392B; --rs:#FBE7E3; --rl:#EDAFA5;
+    --b:#1F4E9C; --bs:#E7EEF9;
+    --p:#6B4FA8; --ps:#F0EAFA;
+    --shadow:0 6px 20px rgba(20,33,61,.07);
+    --shadow2:0 16px 44px rgba(20,33,61,.15);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1100px 520px at 75% -12%,#e2edfb 0,var(--bg) 60%);color:var(--tx);
+    font-family:'Segoe UI',-apple-system,'Malgun Gothic',sans-serif;min-height:100vh;padding:18px}
+  .wrap{max-width:1280px;margin:0 auto}
+  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+  .logo{display:flex;align-items:center;gap:11px}
+  .logo .mk{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#3d8ef0,#5fc7a4);
+    display:grid;place-items:center;font-size:21px;box-shadow:0 6px 16px rgba(61,142,240,.32)}
+  .logo h1{font-size:19px;font-weight:800;letter-spacing:.2px}
+  .logo p{font-size:11.5px;color:var(--mut);margin-top:2px}
+  .htools{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .pill{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);
+    border-radius:11px;padding:8px 13px;font-size:12.5px;font-weight:600;color:var(--mut);box-shadow:var(--shadow)}
+  .pill.who{color:var(--tx)}
+  .pill.who b{color:var(--b)}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--dim);transition:transform .15s}
+  .dot.on{background:var(--g);box-shadow:0 0 9px rgba(18,163,92,.6);animation:brea 2s infinite}
+  @keyframes brea{50%{opacity:.5}}
+  .btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line2);background:var(--card);
+    color:var(--tx);border-radius:11px;padding:9px 14px;font-size:12.5px;font-weight:700;cursor:pointer;transition:.15s;
+    box-shadow:0 1px 2px rgba(25,55,105,.05)}
+  .btn:hover{border-color:var(--b);background:var(--bs);color:var(--b)}
+  .btn.on{background:var(--g);color:#fff;border-color:var(--g);box-shadow:0 3px 10px rgba(18,163,92,.28)}
+  .btn.on:hover{background:#0f8f50;color:#fff}
+  .btn.warn{border-color:var(--rl);color:var(--r);background:var(--rs)}
+  .btn.warn:hover{background:#fbdbd1;color:var(--r);border-color:var(--r)}
+  .btn.sm{padding:6px 11px;font-size:11.5px}
+
+  /* ===== 권한별 표시 ===== */
+  .role-admin,.role-teacher,.role-student{display:none}
+  body.r-admin .role-admin{display:block}
+  body.r-teacher .role-teacher{display:block}
+  body.r-student .role-student{display:block}
+  body.r-admin .role-admin.inl,body.r-teacher .role-teacher.inl,body.r-student .role-student.inl{display:inline-flex}
+  body.r-student .act{pointer-events:none;opacity:.85}
+  body.r-student .act::after{content:'읽기전용';position:absolute;top:9px;right:11px;font-size:9.5px;color:var(--dim)}
+
+  /* ===== 로그인 ===== */
+  .login{position:fixed;inset:0;z-index:100;padding:20px;display:grid;place-items:center;
+    background:radial-gradient(800px 480px at 50% -8%,#dbeafd 0,#f3f7fc 62%)}
+  .login.off{display:none}
+  .lbox{width:100%;max-width:430px;background:var(--card);border:1px solid var(--line);border-radius:22px;
+    padding:30px 26px;box-shadow:var(--shadow2)}
+  .lbox .lh{text-align:center;margin-bottom:22px}
+  .lbox .lh .mk{width:60px;height:60px;border-radius:18px;margin:0 auto 13px;
+    background:linear-gradient(135deg,#3d8ef0,#5fc7a4);display:grid;place-items:center;font-size:29px;
+    box-shadow:0 10px 24px rgba(61,142,240,.3)}
+  .lbox .lh h2{font-size:21px;font-weight:800}
+  .lbox .lh p{font-size:12.5px;color:var(--mut);margin-top:6px}
+  .rolepick{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:18px}
+  .rp{border:1px solid var(--line);background:var(--card2);border-radius:14px;padding:13px 8px;text-align:center;
+    cursor:pointer;transition:.15s}
+  .rp:hover{border-color:var(--line2);background:#eef4fc}
+  .rp.sel{border-color:var(--b);background:var(--bs);box-shadow:0 0 0 3px rgba(47,125,225,.13)}
+  .rp .ri{font-size:24px}
+  .rp b{display:block;font-size:12.5px;margin-top:6px}
+  .rp span{display:block;font-size:10.5px;color:var(--dim);margin-top:2px;line-height:1.35}
+  .fld{margin-bottom:12px}
+  .fld label{display:block;font-size:11.5px;color:var(--mut);font-weight:700;margin-bottom:6px}
+  .fld select,.fld input{width:100%;background:var(--card2);border:1px solid var(--line2);color:var(--tx);
+    border-radius:12px;padding:12px 13px;font-size:13.5px;font-family:inherit}
+  .fld select:focus,.fld input:focus{outline:none;border-color:var(--b);background:#fff;
+    box-shadow:0 0 0 3px rgba(47,125,225,.12)}
+  .lbtn{width:100%;margin-top:8px;justify-content:center;background:var(--b);border-color:var(--b);color:#fff;
+    padding:13px;font-size:14px;box-shadow:0 6px 16px rgba(47,125,225,.28)}
+  .lbtn:hover{background:#1c6ad0;color:#fff;border-color:#1c6ad0}
+  .lerr{color:var(--r);font-size:12px;margin-top:10px;text-align:center;min-height:16px;font-weight:600}
+  .lhint{font-size:11px;color:var(--dim);text-align:center;margin-top:16px;line-height:1.7}
+  .lhint b{color:var(--mut)}
+
+  /* ===== 배너 ===== */
+  .banner{border-radius:18px;padding:18px 22px;display:flex;align-items:center;gap:18px;margin-bottom:14px;
+    border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow);transition:.3s}
+  .banner .bico{width:54px;height:54px;border-radius:15px;display:grid;place-items:center;font-size:26px;background:var(--bs)}
+  .banner .btxt{flex:1}
+  .banner .btxt b{font-size:20px;font-weight:800}
+  .banner .btxt span{display:block;font-size:12.5px;color:var(--mut);margin-top:3px}
+  .banner .risk{text-align:right}
+  .banner .risk b{font-size:31px;font-weight:800;line-height:1}
+  .banner .risk span{font-size:11px;color:var(--mut)}
+  .banner.standby .bico{background:#eaeff7;color:var(--dim)}
+  .banner.standby .risk b{color:var(--dim)}
+  .banner.safe{background:linear-gradient(90deg,var(--gs),var(--card));border-color:var(--gl)}
+  .banner.safe .bico{background:#d6f4e5;color:var(--g)}
+  .banner.safe .risk b{color:var(--g)}
+  .banner.caution{background:linear-gradient(90deg,var(--ys),var(--card));border-color:var(--yl)}
+  .banner.caution .bico{background:#fbeccb;color:var(--y)}
+  .banner.caution .risk b{color:var(--y)}
+  .banner.emergency{background:linear-gradient(90deg,var(--rs),var(--card));border-color:var(--rl);animation:fireB 1.1s infinite}
+  .banner.emergency .bico{background:#fbd9cf;color:var(--r)}
+  .banner.emergency .risk b{color:var(--r)}
+  @keyframes fireB{50%{box-shadow:0 0 0 5px rgba(226,73,43,.14)}}
+
+  .alert{border-radius:15px;padding:14px 18px;margin-bottom:12px;display:none;align-items:center;gap:14px;
+    animation:aP 1.2s infinite;box-shadow:var(--shadow)}
+  .alert.on{display:flex}
+  .alert .ai{font-size:25px}
+  .alert .at{flex:1}.alert .at b{font-size:15.5px}.alert .at span{display:block;font-size:12px;margin-top:3px;opacity:.9}
+  .alert .at .loc{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.75);border-radius:8px;
+    padding:4px 10px;font-size:12px;font-weight:800;margin-top:7px;opacity:1}
+  .alert button{background:#fff;border:1px solid currentColor;border-radius:9px;padding:7px 14px;font-weight:800;
+    cursor:pointer;font-size:12.5px}
+  .alert.fall{background:linear-gradient(90deg,#fbe8f6,#fdf2fa);border:1px solid #e6a7d5;color:#8d2670}
+  .alert.help{background:linear-gradient(90deg,var(--rs),#fef4f0);border:1px solid var(--rl);color:#a8331a}
+  @keyframes aP{50%{box-shadow:0 0 0 6px rgba(226,73,43,.07)}}
+
+  /* ===== 학교 현황 ===== */
+  .schoolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);
+    border-radius:15px;padding:12px 16px;margin-bottom:14px;box-shadow:var(--shadow)}
+  .schoolbar .sbt{font-size:12.5px;font-weight:800;color:var(--tx)}
+  .cnt{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;border-radius:10px;padding:6px 12px;
+    background:var(--card2);border:1px solid var(--line)}
+  .cnt.g{color:var(--g);background:var(--gs);border-color:var(--gl)}
+  .cnt.y{color:var(--y);background:var(--ys);border-color:var(--yl)}
+  .cnt.r{color:var(--r);background:var(--rs);border-color:var(--rl)}
+  .cnt.bl{color:var(--b);background:var(--bs);border-color:#bcd9fb}
+
+  /* ===== 교실 목록 ===== */
+  .clist{display:grid;grid-template-columns:repeat(auto-fill,minmax(218px,1fr));gap:11px}
+  .cl{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:13px;cursor:pointer;
+    transition:.15s;position:relative}
+  .cl:hover{border-color:var(--line2);transform:translateY(-2px);box-shadow:var(--shadow)}
+  .cl.sel{border-color:var(--b);background:#fff;box-shadow:0 0 0 3px rgba(47,125,225,.13)}
+  .cl.standby{border-left:5px solid #c8d3e2;opacity:.82}
+  .cl.safe{border-left:5px solid var(--g)}
+  .cl.caution{border-left:5px solid var(--y);background:var(--ys)}
+  .cl.emergency{border-left:5px solid var(--r);background:var(--rs);animation:fireB 1.2s infinite}
+  .cl .clh{display:flex;align-items:center;gap:7px}
+  .cl .clh b{font-size:14.5px;font-weight:800}
+  .cl .clh .tag{margin-left:auto;font-size:9.5px;font-weight:800;border-radius:7px;padding:3px 8px;
+    background:#e8eef7;color:var(--dim)}
+  .cl .clh .tag.live{background:var(--gs);color:var(--g)}
+  .cl .clr{font-size:11px;color:var(--dim);margin-top:4px}
+  .cl .cls{display:flex;gap:10px;margin-top:9px;font-size:11.5px;color:var(--mut);flex-wrap:wrap}
+  .cl .clst{margin-top:9px;font-size:11.5px;font-weight:800}
+  .cl .flag{position:absolute;top:10px;right:10px;font-size:15px;display:none}
+  .cl.has-evt .flag{display:block;animation:brea 1s infinite}
+
+  .grid{display:grid;grid-template-columns:1.35fr 1fr;gap:14px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .col{display:flex;flex-direction:column;gap:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:16px;box-shadow:var(--shadow)}
+  .card .ct{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800;color:var(--tx);margin-bottom:12px;flex-wrap:wrap}
+  .card .ct .ci{color:var(--b)}
+  .camwrap{position:relative;border-radius:13px;overflow:hidden;background:#dfe8f3;aspect-ratio:4/3;border:1px solid var(--line)}
+  .camwrap video{width:100%;height:100%;object-fit:cover;display:block;background:#dfe8f3}
+  .camwrap canvas{position:absolute;inset:0;width:100%;height:100%}
+  .camoff{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:var(--mut);font-size:12.5px;padding:20px}
+  .camoff .co{font-size:36px;margin-bottom:8px;opacity:.5}
+  .camrow{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+  .badge{position:absolute;top:10px;left:10px;background:rgba(255,255,255,.88);backdrop-filter:blur(4px);
+    border:1px solid var(--line2);border-radius:10px;padding:5px 11px;font-size:11.5px;font-weight:800;z-index:2;color:var(--tx)}
+  .rec{position:absolute;top:10px;right:10px;display:none;align-items:center;gap:5px;background:rgba(255,255,255,.88);
+    border:1px solid var(--rl);border-radius:10px;padding:5px 10px;font-size:11px;font-weight:800;color:var(--r);z-index:2}
+  .rec.on{display:flex}.rec i{width:8px;height:8px;border-radius:50%;background:var(--r);animation:brea 1s infinite}
+  .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .sc{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:14px;position:relative;overflow:hidden}
+  .sc .sh{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--mut);font-weight:700}
+  .sc .sv{font-size:27px;font-weight:800;margin-top:7px;letter-spacing:.3px}
+  .sc .su{font-size:12px;color:var(--dim);font-weight:700}
+  .sc .st{font-size:11px;margin-top:5px;font-weight:700}
+  .sc.hot{border-color:var(--rl);background:var(--rs)}.sc.hot .sv{color:var(--r)}
+  .sc .spark{position:absolute;right:-2px;bottom:-4px;font-size:46px;opacity:.09}
+  .act{position:relative;display:flex;align-items:center;gap:12px;background:var(--card2);border:1px solid var(--line);
+    border-radius:13px;padding:13px 14px;cursor:pointer;transition:.15s;margin-bottom:9px}
+  .act:hover{border-color:var(--line2);background:#eef4fc}
+  .act .aic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:18px;background:#e8eef7;flex-shrink:0}
+  .act .an{flex:1}.act .an b{font-size:13.5px}.act .an span{display:block;font-size:11px;color:var(--dim);margin-top:1px}
+  .sw{width:44px;height:25px;border-radius:20px;background:#cfdae8;position:relative;transition:.2s;flex-shrink:0}
+  .sw::after{content:'';position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:#fff;
+    transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .act.act-on{background:var(--gs);border-color:var(--gl)}
+  .act.act-on .sw{background:var(--g)}.act.act-on .sw::after{left:22px}
+  .act.act-on .aic{background:#d6f4e5}
+  .log{height:150px;overflow-y:auto;font-size:11.5px;font-family:ui-monospace,monospace;display:flex;flex-direction:column;gap:5px}
+  .log .li{color:var(--mut);display:flex;gap:8px}.log .li .lt{color:var(--dim);flex-shrink:0}
+  .log .li .lc{color:var(--b);flex-shrink:0;font-weight:700}
+  .log .li.hi{color:var(--r);font-weight:600}.log .li.ok{color:var(--g)}
+  .demo{display:flex;gap:8px;flex-wrap:wrap}
+
+  /* ===== 시간표 ===== */
+  .ttrow{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:10px;font-size:12.5px;color:var(--mut)}
+  .ttrow.cur{background:var(--gs);color:var(--g);font-weight:800;border:1px solid var(--gl)}
+  .ttrow .tp{width:44px;flex-shrink:0;font-weight:800}
+  .ttrow .ts{flex:1}
+  .ttrow .tm{font-size:9.5px;font-weight:800;border-radius:6px;padding:2px 7px;background:var(--ps);color:var(--p)}
+  .ttrow .tt2{font-size:11px;color:var(--dim)}
+  .movebox{margin-top:11px;border:1px dashed var(--line2);border-radius:12px;padding:11px 13px;font-size:11.5px;
+    color:var(--mut);line-height:1.65;background:var(--card2)}
+  .movebox b{color:var(--p)}
+
+  /* ===== 도움요청 접수함 ===== */
+  .req{display:flex;align-items:flex-start;gap:10px;background:var(--card2);border:1px solid var(--line);border-radius:12px;
+    padding:11px 12px;margin-bottom:8px}
+  .req .ri{font-size:18px;flex-shrink:0}
+  .req .rb{flex:1}
+  .req .rb b{font-size:12.5px;display:block}
+  .req .rb .rl{font-size:11.5px;color:var(--b);font-weight:800;margin-top:3px}
+  .req .rb .rt{font-size:10.5px;color:var(--dim);margin-top:2px}
+  .req .rx{background:#fff;border:1px solid var(--line2);color:var(--mut);border-radius:8px;padding:5px 10px;font-size:11px;
+    font-weight:700;cursor:pointer}
+  .req .rx:hover{border-color:var(--g);color:var(--g)}
+  .req.fire{border-color:var(--rl);background:var(--rs)}
+  .req.fall{border-color:#e6a7d5;background:#fdf2fa}
+  .empty{font-size:11.5px;color:var(--dim);text-align:center;padding:16px 0}
+
+  .foot{text-align:center;color:var(--dim);font-size:11px;margin-top:18px;line-height:1.7}
+  .foot b{color:var(--mut)}
+
+
+  /* ===== 병원 정보 팝업 UI ===== */
+  .hosp-box { margin-top: 12px; background: #fff; border-radius: 10px; padding: 12px; border: 1px solid #e6a7d5; display: flex; flex-direction: column; gap: 8px; }
+  .hosp-item { padding-bottom: 8px; border-bottom: 1px dashed #f0cce8; }
+  .hosp-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .hosp-title { font-size: 13.5px; font-weight: 800; color: #8d2670; display: flex; justify-content: space-between; }
+  .hosp-info { font-size: 11.5px; color: #5d7290; margin-top: 4px; line-height: 1.4; }
+  .hosp-link { display: inline-block; background: #8d2670; color: #fff; text-decoration: none; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; margin-top: 6px; transition: 0.2s; }
+  .hosp-link:hover { background: #681a52; }
+
+  /* ================= 학교 테마 ================= */
+  body{
+    font-family:var(--ui);
+    background:
+      linear-gradient(rgba(20,33,61,.035) 1px, transparent 1px) 0 0/100% 30px,
+      radial-gradient(900px 420px at 82% -14%, #EDE7D6 0, var(--bg) 62%);
+  }
+  h1,h2,.banner .btxt b,.cl .clh b,.schoolbar .sbt,.lbox .lh h2{font-family:var(--disp);letter-spacing:-.2px}
+  .sc .sv,.banner .risk b,.cnt b{font-variant-numeric:tabular-nums}
+
+  /* 현판 헤더 — 흰 바탕에 황동 밑줄 (로고가 네이비라 어두운 배경은 피함) */
+  header{background:var(--card);border:1px solid var(--line);border-bottom:3px solid var(--brass);
+    border-radius:16px;padding:13px 18px;box-shadow:var(--shadow)}
+  .logo h1{font-size:21px}
+  .logo p{color:var(--mut)}
+  .logo::before{content:'학교 안전 관제';position:absolute;margin-top:-26px;font-size:9.5px;letter-spacing:3px;
+    color:var(--brass);font-weight:800;font-family:var(--ui)}
+  .logo{position:relative;padding-top:8px}
+
+  /* 시그니처 — 학교 전체 현황을 칠판으로 */
+  .schoolbar{
+    background:radial-gradient(800px 220px at 18% -60%, rgba(255,255,255,.07), transparent 62%),
+               linear-gradient(180deg,#36564B,#294038);
+    border:9px solid var(--wood);border-radius:6px;color:#EAF3EE;padding:15px 18px;
+    box-shadow:inset 0 0 44px rgba(0,0,0,.34), var(--shadow);}
+  .schoolbar .sbt{color:#fff;font-size:14.5px}
+  .schoolbar .cnt{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);color:#DCE9E3}
+  .schoolbar .cnt.g{color:#8FE3B6;background:rgba(143,227,182,.10);border-color:rgba(143,227,182,.32)}
+  .schoolbar .cnt.y{color:#F2CE74;background:rgba(242,206,116,.10);border-color:rgba(242,206,116,.32)}
+  .schoolbar .cnt.r{color:#F2A093;background:rgba(242,160,147,.12);border-color:rgba(242,160,147,.36)}
+  .schoolbar .cnt.bl{color:#9EC6F5;background:rgba(158,198,245,.10);border-color:rgba(158,198,245,.32)}
+  .schoolbar #lastSync{color:#A9BEB6!important}
+
+  /* 교실 카드 — 교실 문패 */
+  .cl{border-radius:5px 5px 12px 12px;border-top:4px solid var(--brass);background:#fff}
+  .cl .clh b{font-size:15.5px}
+  .cl .clh .tag{border-radius:4px;letter-spacing:.4px}
+  .cl.standby{border-top-color:#D8D2C2}
+
+  /* 버튼 */
+  .btn{border-radius:9px}
+  .btn:hover{border-color:var(--brass);background:#FCF6E8;color:var(--ink)}
+  .btn.on:hover{background:#25664A}
+  .lbtn{background:var(--ink);border-color:var(--ink);box-shadow:0 6px 16px rgba(20,33,61,.25)}
+  .lbtn:hover{background:#0E1830;border-color:#0E1830;color:#fff}
+
+  /* 시간표 — 공책 괘선 */
+  .ttrow{border-bottom:1px dashed var(--line);border-radius:0}
+  .ttrow:last-child{border-bottom:none}
+  .ttrow.cur{background:var(--gs);border:1px solid var(--gl);border-radius:9px}
+  .ttrow .tp{font-family:var(--disp)}
+
+  /* 낙상 알림 — 학교 톤으로 */
+  .alert.fall{background:linear-gradient(90deg,var(--ps),#FBF9FE);border:1px solid #C3AEE6;color:#432B72}
+  .alert.fall button{color:#432B72;border-color:#C3AEE6}
+
+  /* 로그인 — 교문 느낌 */
+  .login{background:radial-gradient(760px 420px at 50% -10%, #E9E2CF 0, #F4F1E6 64%)}
+  .lbox{border-top:5px solid var(--brass);border-radius:6px 6px 20px 20px}
+  .rp.sel{border-color:var(--brass);background:#FCF6E8;box-shadow:0 0 0 3px rgba(200,154,43,.18)}
+
+  @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ========== 로그인 화면 ========== -->
+<div class="login" id="login">
+  <div class="lbox">
+      <div class="lh">
+        <!-- 기존 이모티콘과 글자를 지우고 로고 이미지로 교체 -->
+        <img src="logo.png" alt="smart-SGT 로고" style="max-width: 180px; margin-bottom: 12px;">
+        <p>학교 계정으로 로그인하세요</p>
+    </div>
+    <div class="rolepick">
+      <div class="rp" data-role="admin"><div class="ri">🎓</div><b>관리자</b><span>교장·교감<br>전교실 모니터링</span></div>
+      <div class="rp sel" data-role="teacher"><div class="ri">👩‍🏫</div><b>담임</b><span>담당 학급<br>관제·제어</span></div>
+      <div class="rp" data-role="student"><div class="ri">🙋</div><b>학생</b><span>교실 단말<br>도움 요청</span></div>
+    </div>
+    <div class="fld"><label id="nmLabel">이름</label>
+      <select id="lname"></select></div>
+    <div class="fld" id="pwFld"><label>비밀번호</label>
+      <input type="password" id="lpw" placeholder="비밀번호 입력" autocomplete="off"></div>
+    <button class="btn lbtn" id="loginBtn">로그인</button>
+    <div class="lerr" id="lerr"></div>
+    <div class="lhint">데모 비밀번호 — 관리자 <b>rhksflwk</b> · 담임 <b>ekadla</b><br>학생은 비밀번호 없이 입장합니다</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header>
+      <div class="logo">
+        <!-- 기존 이모티콘을 지우고 로고 이미지로 교체, 높이를 50px로 맞춰 정렬 -->
+        <img src="logo.png" alt="smart-SGT 로고" style="height: 50px; margin-right: 5px;">
+        <div><h1>smart-SGT 관제</h1><p id="subTitle">골든타임을 지키는 교실 안전 관제</p></div>
+    </div>
+    <div class="htools">
+      <div class="pill who"><span id="whoIco">👩‍🏫</span><span id="who">—</span></div>
+      <div class="pill"><span class="dot" id="dot"></span><span id="stat">연결 대기</span></div>
+      <button class="btn" id="conn">🔌 USB 연결</button>
+      <button class="btn on" id="voice">🔊 음성 ON</button>
+      <button class="btn warn role-student inl" id="help">🆘 도움 요청</button>
+      <button class="btn" id="logout">↩ 로그아웃</button>
+    </div>
+  </header>
+
+  <!-- ===== 학교 전체 현황 (관리자) ===== -->
+  <div class="role-admin">
+    <div class="schoolbar">
+      <span class="sbt">🏫 학교 전체 안전 현황</span>
+      <span class="cnt g">🛡️ 정상 <b id="cnt-safe">0</b></span>
+      <span class="cnt y">⚠️ 주의 <b id="cnt-caution">0</b></span>
+      <span class="cnt r">🔥 긴급 <b id="cnt-emergency">0</b></span>
+      <span class="cnt">⚪ 미연결 <b id="cnt-standby">0</b></span>
+      <span class="cnt bl">🆘 미처리 요청 <b id="cnt-req">0</b></span>
+      <span style="margin-left:auto;font-size:11px;color:var(--dim)" id="lastSync">—</span>
+    </div>
+  </div>
+
+  <!-- ===== 교실 목록 ===== -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="ct"><span class="ci">🗂️</span><span id="clistTitle">교실 목록</span>
+      <span style="margin-left:auto;font-size:10.5px;color:var(--dim);font-weight:600">카드를 클릭하면 해당 교실 상세 관제로 전환됩니다</span></div>
+    <div class="clist" id="clist"></div>
+  </div>
+
+  <section class="banner safe" id="banner">
+    <div class="bico" id="bico">🛡️</div>
+    <div class="btxt"><b id="blvl">시스템 대기</b><span id="bmsg">USB로 교실 단말을 연결하세요</span></div>
+    <div class="risk"><b id="rnum">--</b><span>위험도 /100</span></div>
+  </section>
+
+  <div class="alert fall" id="fallAlert">
+    <div class="ai">🚨</div>
+    <div class="at" style="flex:1"><b>쓰러짐 감지 — 즉시 확인 필요</b>
+      <span id="fallSub">사람이 쓰러진 상태로 감지되었습니다</span>
+      <span class="loc" id="fallLoc">📍 —</span>
+      
+      <!-- 병원 정보가 렌더링될 영역 -->
+      <div id="hospArea" class="hosp-box" style="display:none;">
+        <div style="font-size:12px; color:#8d2670; font-weight:bold;">🏥 가장 가까운 응급 병원 안내</div>
+        <div id="hospList" style="font-size:11px; color:#888;">위치 정보를 가져오는 중입니다...</div>
+      </div>
+    </div>
+    <button onclick="dismiss('fall')" style="align-self:flex-start; margin-top:4px;">확인</button>
+  </div>
+  <section class="card" id="emgCard" style="display:none;border-color:var(--rl);margin-bottom:14px">
+    <div class="ct"><span class="ci">🏥</span><span id="emgTitle">긴급 안내</span>
+      <span style="margin-left:auto;display:flex;gap:7px;flex-wrap:wrap">
+        <a class="btn sm" href="tel:119" style="text-decoration:none">📞 119 전화</a>
+        <button class="btn sm" id="emgTg">📲 텔레그램 상세 전송</button>
+        <button class="btn sm" id="emgClose">닫기</button>
+      </span></div>
+    <div id="emgWhere" style="font-size:12.5px;color:var(--mut);margin-bottom:10px">—</div>
+    <div id="emgList" style="display:flex;flex-direction:column;gap:8px">
+      <div class="empty">주변 시설을 찾는 중입니다…</div>
+    </div>
+  </section>
+
+  <div class="alert help" id="helpAlert">
+    <div class="ai">🆘</div>
+    <div class="at"><b>도움 요청이 접수되었습니다</b>
+      <span id="helpSub">교실 단말(TFT)에서 요청</span>
+      <span class="loc" id="helpLoc">📍 —</span></div>
+    <button onclick="dismiss('help')">확인</button>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <div class="card">
+        <div class="ct"><span class="ci">📹</span>실시간 교실 영상 · 사람 위치
+          <span style="margin-left:auto;font-size:11px;color:var(--b);font-weight:800" id="camWho">—</span></div>
+        <div class="camwrap">
+          <video id="cam" autoplay playsinline muted></video>
+          <canvas id="ov"></canvas>
+          <div class="badge" id="camBadge">👥 감지 0명</div>
+          <div class="rec" id="recDot"><i></i>REC</div>
+          <div class="camoff" id="camOff"><div><div class="co">📷</div>웹캠을 켜면 실시간 영상이 표시됩니다<br><span style="font-size:11px;color:var(--dim)">HuskyLens가 감지한 사람 위치가 박스로 겹쳐집니다</span></div></div>
+        </div>
+        <div class="camrow">
+          <button class="btn" id="camBtn">📷 웹캠 켜기</button>
+          <button class="btn" id="recBtn">⏺ 녹화 표시</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ct"><span class="ci">📊</span>센서 · 교실 환경
+          <span style="margin-left:auto;font-size:11px;color:var(--b);font-weight:800" id="senWho">—</span></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:11px">
+          <span class="cnt" id="hl1chip">📷 화재캠 —</span>
+          <span class="cnt" id="hl2chip">📷 사람캠 —</span>
+          <span class="cnt" id="fallchip">🧍 자세 —</span>
+          <span class="cnt" id="firechip">🔥 화재판정 —</span>
+        </div>
+        <div class="sgrid">
+          <div class="sc" id="c-inside"><div class="sh">🚪 실내 인원(출입)</div><div class="sv" id="v-inside">0<span class="su">명</span></div><div class="st" id="s-inside" style="color:var(--dim)">초음파 출입 카운트</div><div class="spark">🚪</div></div>
+          <div class="sc" id="c-temp"><div class="sh">🌡️ 온도 (DHT11)</div><div class="sv" id="v-temp">--<span class="su">°C</span></div><div class="st" id="s-temp" style="color:var(--dim)">대기</div><div class="spark">🌡️</div></div>
+          <div class="sc" id="c-humi"><div class="sh">💧 습도 (DHT11)</div><div class="sv" id="v-humi">--<span class="su">%</span></div><div class="st" id="s-humi" style="color:var(--dim)">대기</div><div class="spark">💧</div></div>
+          <div class="sc" id="c-gas"><div class="sh">💨 가스·연기 (MQ-2)</div><div class="sv" id="v-gas">--</div><div class="st" id="s-gas" style="color:var(--dim)">대기</div><div class="spark">💨</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <!-- 도움요청 접수함 -->
+      <div class="card">
+        <div class="ct"><span class="ci">🆘</span>도움 요청 접수함 <span style="margin-left:auto;font-size:10.5px;color:var(--dim);font-weight:600">요청 위치가 함께 표시됩니다</span></div>
+        <div id="reqBox"><div class="empty">접수된 요청이 없습니다</div></div>
+      </div>
+
+      <div class="card">
+        <div class="ct"><span class="ci">⚙️</span>자동 대응 장치
+          <span style="margin-left:auto;font-size:10.5px;color:var(--dim);font-weight:600" id="actWho">—</span></div>
+        <div class="act" id="a-win" data-on="WIN_OPEN" data-off="WIN_CLOSE"><div class="aic">🪟</div><div class="an"><b>교실 창문</b><span id="t-win">정상 시 열림</span></div><div class="sw"></div></div>
+        <div class="act" id="a-fan" data-on="FAN_ON" data-off="FAN_OFF"><div class="aic">🌀</div><div class="an"><b>환기 팬</b><span id="t-fan">이상 감지 시 가동</span></div><div class="sw"></div></div>
+        <div class="act" id="a-light" data-on="LIGHT_ON" data-off="LIGHT_OFF"><div class="aic">💡</div><div class="an"><b>교실 전등</b><span id="t-light">재실·야간 자동</span></div><div class="sw"></div></div>
+        <div class="act" id="a-alarm" data-on="ALARM_ON" data-off="ALARM_OFF"><div class="aic">🔔</div><div class="an"><b>화재 경보(부저)</b><span id="t-alarm">화재 시 자동</span></div><div class="sw"></div></div>
+      </div>
+
+      <div class="card">
+        <div class="ct"><span class="ci">⏰</span>시간표 · 깨우기 알람
+          <button class="btn sm" id="wakeBtn" style="margin-left:auto">🔊 깨우기 방송</button></div>
+        <div id="tt" style="display:flex;flex-direction:column;gap:3px"></div>
+        <div class="movebox">
+          🚶 <b>이동수업 미이동 감지</b> — 이동수업 교시가 시작된 뒤
+          <b id="graceTxt">3분</b> 안에 실내 인원이 줄지 않으면
+          해당 교실로 <b>깨우기 방송</b>이 자동 송출됩니다.
+          <div style="display:flex;align-items:center;gap:9px;margin-top:9px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--mut)">
+              <input type="checkbox" id="moveOn" checked> 자동 감지 켜기</label>
+            <select id="graceSel" style="background:#fff;border:1px solid var(--line2);color:var(--tx);border-radius:9px;padding:5px 8px;font-size:11.5px">
+              <option value="10">10초 (시연)</option>
+              <option value="60">1분</option>
+              <option value="180" selected>3분</option>
+              <option value="300">5분</option>
+            </select>
+            <button class="btn sm" id="d-move">🚶 미이동 시연</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px;margin-top:12px;flex-wrap:wrap">
+          <span style="font-size:12px;color:var(--mut)">알람 시각</span>
+          <input type="time" id="alarmT" value="09:00" style="background:#fff;border:1px solid var(--line2);color:var(--tx);border-radius:9px;padding:6px 9px;font-size:12.5px">
+          <label style="font-size:12px;color:var(--mut);display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="alarmOn"> 켜기</label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ct"><span class="ci">📝</span>이벤트 로그 (학교 전체)</div>
+        <div class="log" id="log"></div>
+        <div class="demo" style="margin-top:12px">
+          <button class="btn sm" id="d-fire">🔥 화재 시연</button>
+          <button class="btn sm" id="d-fall">🚨 쓰러짐 시연</button>
+          <button class="btn sm" id="d-help">🆘 타교실 도움요청</button>
+          <button class="btn sm" id="d-reset">↺ 카운트 리셋</button>
+          <!-- [추가] CSV 다운로드 버튼 -->
+          <select id="slotSel" style="background:#fff;border:1px solid var(--line2);color:var(--tx);border-radius:9px;padding:5px 8px;font-size:11.5px">
+            <option value="10">10분 단위</option>
+            <option value="30" selected>30분 단위</option>
+            <option value="60">1시간 단위</option>
+          </select>
+          <button class="btn sm" id="d-csv" style="background:#12a35c; color:white; border:none;">📥 시간대별 CSV</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    크롬/엣지에서 <b>USB 연결</b>로 교실 단말과 실시간 연동됩니다 · USB로 들어온 실측값은 <b>선택된 교실</b>에 반영됩니다<br>
+    HuskyLens는 영상이 아닌 <b>좌표</b>를 보냅니다 — 실시간 영상은 <b>웹캠</b>, 사람 위치는 <b>박스</b>로 표시됩니다
+  </div>
+</div>
+
+<script>
+  const $=id=>document.getElementById(id);
+
+  /* ================= 교실 · 계정 ================= */
+  const CLASSES=[
+    {id:'1-1',name:'1학년 1반',room:'본관 2층 201호',teacher:'A'},
+    {id:'1-2',name:'1학년 2반',room:'본관 2층 202호',teacher:'B'},
+    {id:'1-3',name:'1학년 3반',room:'본관 2층 203호',teacher:'C'},
+    {id:'2-1',name:'2학년 1반',room:'본관 3층 301호',teacher:'D'},
+    {id:'2-2',name:'2학년 2반',room:'본관 3층 302호',teacher:'E'},
+    {id:'SCI',name:'과학실',    room:'별관 1층 101호',teacher:'F'}
+  ];
+  const ADMINS=[{name:'A 교장 선생님',pw:'rhksflwk'},{name:'B 교감 선생님',pw:'rhksflwk'}];
+  const TPW='ekadla';
+
+  function newState(){return{level:'standby',inside:null,ppl:null,gas:null,lux:null,temp:null,humi:null,box:[],
+    fan:false,win:true,light:false,alarm:false,fall:false,help:false,live:false,evt:false,
+    man:{win:null,fan:null,light:null,alarm:null},lastFall:0,lastHelp:0,lastData:0,
+    hl1:null,hl2:null,cam:false,gasfire:false,fallTimer:null};}
+  const ST={};CLASSES.forEach(function(c){ST[c.id]=newState();});
+  function cls(id){for(var i=0;i<CLASSES.length;i++)if(CLASSES[i].id===id)return CLASSES[i];return CLASSES[0];}
+
+  const U={role:null,name:'',classId:null};      // 로그인 사용자
+  let sel=CLASSES[0].id;                          // 현재 상세 관제 중인 교실
+  function cur(){return ST[sel];}
+  function visibleClasses(){return U.role==='admin'?CLASSES:CLASSES.filter(function(c){return c.id===U.classId;});}
+
+  function now(){return new Date().toTimeString().slice(0,8);}
+  function log(m,c,cid){const l=$('log');const e=document.createElement('div');e.className='li '+(c||'');
+    e.innerHTML='<span class="lt">'+now()+'</span>'+(cid?'<span class="lc">['+cls(cid).name+']</span>':'')+'<span>'+m+'</span>';
+    l.insertBefore(e,l.firstChild);while(l.children.length>60)l.removeChild(l.lastChild);}
+
+  /* ================= 로그인 ================= */
+  let loginRole='teacher';
+  function fillNames(){
+    const s=$('lname');s.innerHTML='';
+    if(loginRole==='admin'){ADMINS.forEach(function(a){s.innerHTML+='<option value="'+a.name+'">'+a.name+'</option>';});
+      $('nmLabel').textContent='이름 (교장·교감)';$('pwFld').style.display='';}
+    else if(loginRole==='teacher'){CLASSES.forEach(function(c){s.innerHTML+='<option value="'+c.id+'">'+c.teacher+' 선생님 · '+c.name+'</option>';});
+      $('nmLabel').textContent='담임 선생님 / 담당 학급';$('pwFld').style.display='';}
+    else{CLASSES.forEach(function(c){s.innerHTML+='<option value="'+c.id+'">'+c.name+' ('+c.room+')</option>';});
+      $('nmLabel').textContent='내 교실';$('pwFld').style.display='none';}
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.rp'),function(r){r.onclick=function(){
+    Array.prototype.forEach.call(document.querySelectorAll('.rp'),function(x){x.classList.remove('sel');});
+    r.classList.add('sel');loginRole=r.dataset.role;$('lerr').textContent='';fillNames();};});
+  fillNames();
+
+  $('loginBtn').onclick=doLogin;
+  $('lpw').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+  function doLogin(){
+    const v=$('lname').value,pw=$('lpw').value;
+    if(loginRole==='admin'){
+      const a=ADMINS.filter(function(x){return x.name===v;})[0];
+      if(!a||pw!==a.pw){$('lerr').textContent='비밀번호가 올바르지 않습니다';return;}
+      U.role='admin';U.name=a.name;U.classId=null;sel=CLASSES[0].id;
+    }else if(loginRole==='teacher'){
+      if(pw!==TPW){$('lerr').textContent='비밀번호가 올바르지 않습니다';return;}
+      const c=cls(v);U.role='teacher';U.name=c.teacher+' 선생님';U.classId=c.id;sel=c.id;
+    }else{
+      const c=cls(v);U.role='student';U.name=c.name+' 학생 단말';U.classId=c.id;sel=c.id;
+    }
+    $('lpw').value='';$('lerr').textContent='';
+    document.body.className='r-'+U.role;
+    $('login').classList.add('off');
+    $('who').innerHTML='<b>'+U.name+'</b> · '+({admin:'관리자(전교실)',teacher:'담임',student:'학생'}[U.role]);
+    $('whoIco').textContent={admin:'🎓',teacher:'👩‍🏫',student:'🙋'}[U.role];
+    $('subTitle').textContent=U.role==='admin'?'전 교실 통합 모니터링 · 교장/교감 관리자 모드'
+      :(U.role==='teacher'?cls(U.classId).name+' 담임 관제 · '+cls(U.classId).room:cls(U.classId).name+' 교실 단말');
+    $('clistTitle').textContent=U.role==='admin'?'교실 목록 · 전체 '+CLASSES.length+'개 반 모니터링':'내 교실';
+    log(U.name+' 로그인 · '+({admin:'관리자 모드',teacher:'담임 모드',student:'학생 모드'}[U.role]),'ok');
+    renderList();render();renderReq();renderTT();
+  }
+  $('logout').onclick=function(){U.role=null;document.body.className='';$('login').classList.remove('off');
+    $('lerr').textContent='';};
+
+  /* ================= 알림 · 도움요청 접수함 ================= */
+  const REQ=[];   // {kind, cid, from, t}
+  function pushReq(kind,cid,from){
+    REQ.unshift({kind:kind,cid:cid,from:from||'교실 단말(TFT 터치)',t:now()});
+    while(REQ.length>12)REQ.pop();
+    ST[cid].evt=true;renderReq();renderList();
+  }
+  const KIND={help:{i:'🆘',t:'도움 요청'},fall:{i:'🚨',t:'쓰러짐 감지'},fire:{i:'🔥',t:'화재 감지'}};
+  function renderReq(){
+    const b=$('reqBox');
+    const list=REQ.filter(function(r){return U.role==='admin'||r.cid===U.classId;});
+    $('cnt-req').textContent=REQ.length;
+    if(!list.length){b.innerHTML='<div class="empty">접수된 요청이 없습니다</div>';return;}
+    b.innerHTML=list.map(function(r){const c=cls(r.cid);
+      return '<div class="req '+(r.kind==='fire'?'fire':r.kind==='fall'?'fall':'')+'">'+
+        '<div class="ri">'+KIND[r.kind].i+'</div><div class="rb">'+
+        '<b>'+KIND[r.kind].t+'</b>'+
+        '<div class="rl">📍 '+c.name+' · '+c.room+'</div>'+
+        '<div class="rt">'+r.from+' · '+r.t+'</div></div>'+
+        '<button class="rx" onclick="clearReq('+REQ.indexOf(r)+')">처리</button></div>';}).join('');
+  }
+  window.clearReq=function(i){const r=REQ[i];if(!r)return;REQ.splice(i,1);
+    log('요청 처리 완료 · '+KIND[r.kind].t,'ok',r.cid);
+    if(!REQ.filter(function(x){return x.cid===r.cid;}).length)ST[r.cid].evt=false;
+    renderReq();renderList();};
+
+  function beep(f){try{const a=new(window.AudioContext||window.webkitAudioContext)();const o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.type='square';o.frequency.value=f||880;g.gain.value=.05;o.start();setTimeout(function(){o.stop();a.close();},550);}catch(e){}}
+  window.dismiss=function(t){$(t+'Alert').classList.remove('on');};
+
+
+
+  /* ================= 텔레그램 (대시보드 상세 발송) ================= */
+  // ↓ 본인 봇 정보를 넣으면 대시보드가 병원·소방서 정보까지 담아 상세 메시지를 보냅니다
+  const TG = { token:'', chat:'' };
+  async function tgSend(text){
+    if(!TG.token||!TG.chat){ log('텔레그램 미설정 — 상세 메시지 생략(단말이 기본 알림은 전송)',''); return false; }
+    try{
+      const r=await fetch('https://api.telegram.org/bot'+TG.token+'/sendMessage',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({chat_id:TG.chat,text:text,disable_web_page_preview:true})});
+      if(r.ok){ log('📲 텔레그램 상세 메시지 전송 완료','ok'); return true; }
+      log('텔레그램 전송 실패 (토큰/ChatID 확인)','hi'); return false;
+    }catch(e){ log('텔레그램 전송 실패 (네트워크)','hi'); return false; }
+  }
+
+  /* ================= 주변 병원·소방서 실데이터 (OpenStreetMap · API키 불필요) ================= */
+  const EMG={kind:null,cid:null,pos:null,list:[]};
+  function distM(la1,lo1,la2,lo2){
+    const R=6371000,t=Math.PI/180;
+    const dLa=(la2-la1)*t,dLo=(lo2-lo1)*t;
+    const a=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(la1*t)*Math.cos(la2*t)*Math.sin(dLo/2)*Math.sin(dLo/2);
+    return Math.round(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));
+  }
+  function getPos(){return new Promise(function(res,rej){
+    if(!navigator.geolocation)return rej(new Error('no geo'));
+    navigator.geolocation.getCurrentPosition(function(p){res({lat:p.coords.latitude,lng:p.coords.longitude});},rej,
+      {enableHighAccuracy:true,timeout:8000,maximumAge:60000});});}
+  async function overpass(kind,lat,lng,radius){
+    const f = kind==='fire' ? '"amenity"="fire_station"' : '"amenity"~"^(hospital|clinic)$"';
+    const q='[out:json][timeout:20];('+
+      'node['+f+'](around:'+radius+','+lat+','+lng+');'+
+      'way['+f+'](around:'+radius+','+lat+','+lng+'););out center 30;';
+    const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q)});
+    const j=await r.json();
+    const out=[];
+    (j.elements||[]).forEach(function(e){
+      const la=e.lat||(e.center&&e.center.lat), lo=e.lon||(e.center&&e.center.lon), t=e.tags||{};
+      if(!la||!lo||!t.name)return;
+      out.push({name:t.name, phone:t['phone']||t['contact:phone']||'',
+        addr:[t['addr:city'],t['addr:district'],t['addr:street'],t['addr:housenumber']].filter(Boolean).join(' '),
+        emg:t.emergency==='yes', lat:la, lng:lo});
+    });
+    return out;
+  }
+  function emgRender(){
+    const box=$('emgList');
+    if(!EMG.list.length){
+      box.innerHTML='<div class="empty">주변 시설을 찾지 못했습니다 — <a href="https://map.kakao.com/?q='+
+        (EMG.kind==='fire'?'소방서':'응급실')+'" target="_blank">지도에서 직접 검색</a></div>';
+      return;
+    }
+    box.innerHTML=EMG.list.slice(0,6).map(function(h){
+      const d=h.dist>=1000?(h.dist/1000).toFixed(1)+'km':h.dist+'m';
+      return '<div class="req"><div class="ri">'+(EMG.kind==='fire'?'🚒':'🏥')+'</div><div class="rb">'+
+        '<b>'+h.name+(h.emg?' · 응급실':'')+'</b>'+
+        '<div class="rl">📍 '+d+' 거리'+(h.addr?' · '+h.addr:'')+'</div>'+
+        '<div class="rt">'+(h.phone?'📞 '+h.phone:'전화번호 정보 없음')+'</div></div>'+
+        '<div style="display:flex;flex-direction:column;gap:5px">'+
+        (h.phone?'<a class="rx" style="text-decoration:none;text-align:center" href="tel:'+h.phone.replace(/[^0-9+]/g,'')+'">전화</a>':'')+
+        '<a class="rx" style="text-decoration:none;text-align:center" target="_blank" href="https://map.kakao.com/link/to/'+
+        encodeURIComponent(h.name)+','+h.lat+','+h.lng+'">길찾기</a></div></div>';
+    }).join('');
+  }
+  function emgText(){
+    const c=cls(EMG.cid||sel);
+    var t=(EMG.kind==='fire'?'🔥 [smart-SGT] 화재 발생':'🚨 [smart-SGT] 낙상 감지')+'\n'+
+      '위치: '+c.name+' · '+c.room+' (담임 '+c.teacher+' 선생님)\n'+
+      '시각: '+new Date().toLocaleString('ko-KR')+'\n'+
+      (EMG.kind==='fire'?'불꽃과 가스가 동시에 감지되었습니다. 즉시 대피 후 119에 신고하세요.'
+                        :'쓰러진 채 움직임이 없습니다. 즉시 확인이 필요합니다.')+'\n신고: 119\n';
+    if(EMG.list.length){
+      t+='\n가까운 '+(EMG.kind==='fire'?'소방서':'응급 의료기관')+'\n';
+      EMG.list.slice(0,3).forEach(function(h,i){
+        const d=h.dist>=1000?(h.dist/1000).toFixed(1)+'km':h.dist+'m';
+        t+=(i+1)+'. '+h.name+' ('+d+')'+(h.phone?' 전화 '+h.phone:'')+'\n'+
+           '   길찾기: https://map.kakao.com/link/to/'+encodeURIComponent(h.name)+','+h.lat+','+h.lng+'\n';
+      });
+    }else{
+      t+='\n지도 검색: https://map.kakao.com/?q='+(EMG.kind==='fire'?'소방서':'응급실')+'\n';
+    }
+    return t;
+  }
+  async function showEmergency(kind,cid){
+    EMG.kind=kind; EMG.cid=cid||sel; EMG.list=[];
+    const c=cls(EMG.cid);
+    $('emgCard').style.display='';
+    $('emgTitle').textContent=(kind==='fire'?'🔥 화재 — 주변 소방서 안내':'🚨 낙상 — 주변 응급 의료기관 안내');
+    $('emgWhere').textContent='발생 위치: '+c.name+' · '+c.room+' · 담임 '+c.teacher+' 선생님';
+    $('emgList').innerHTML='<div class="empty">현재 위치와 주변 시설을 찾는 중입니다…</div>';
+    try{
+      EMG.pos=await getPos();
+      var raw=await overpass(kind,EMG.pos.lat,EMG.pos.lng,3000);
+      if(raw.length<3) raw=await overpass(kind,EMG.pos.lat,EMG.pos.lng,8000);
+      EMG.list=raw.map(function(h){h.dist=distM(EMG.pos.lat,EMG.pos.lng,h.lat,h.lng);return h;})
+                  .sort(function(a,b){return a.dist-b.dist;});
+      emgRender();
+      log('🏥 주변 '+(kind==='fire'?'소방서':'의료기관')+' '+EMG.list.length+'곳 조회 완료','ok',EMG.cid);
+    }catch(e){
+      $('emgList').innerHTML='<div class="empty">위치 권한이 거부되었거나 조회에 실패했습니다 — <a href="https://map.kakao.com/?q='+
+        (kind==='fire'?'소방서':'응급실')+'" target="_blank">지도에서 직접 검색</a></div>';
+      log('주변 시설 조회 실패 — 브라우저 위치 권한을 허용해 주세요','hi',EMG.cid);
+    }
+    tgSend(emgText());
+  }
+  $('emgClose').onclick=function(){$('emgCard').style.display='none';};
+  $('emgTg').onclick=function(){tgSend(emgText());};
+  function showNearbyHospitals(){ showEmergency('fall', EMG.cid||sel); }
+
+  /* ================= (구) 병원 목록 · 예비용 ================= */
+
+  const REAL_HOSPITALS = [
+    { name: '나주종합병원', phone: '061-333-3333', lat: 35.0158, lng: 126.7107, addr: '전남 나주시 영산로 5271' },
+    { name: '나주빛가람병원', phone: '061-330-9000', lat: 35.0163, lng: 126.7745, addr: '전남 나주시 빛가람로 736' },
+    { name: '화순전남대학교병원', phone: '061-379-7114', lat: 35.0532, lng: 126.9893, addr: '전남 화순군 화순읍 서양로 322' }
+  ];
+
+  // 두 좌표 간의 거리 계산 (미터 단위 반환)
+  function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+    return (R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))) * 1000).toFixed(0);
+  }
+
+  function showNearbyHospitals() {
+    $('hospArea').style.display = 'flex';
+    const list = $('hospList');
+    
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        const myLat = pos.coords.latitude, myLng = pos.coords.longitude;
+        
+        // 거리순으로 정렬
+        const sorted = REAL_HOSPITALS.map(h => { h.dist = getDistance(myLat, myLng, h.lat, h.lng); return h; })
+                                     .sort((a, b) => a.dist - b.dist);
+
+        let html = '';
+        sorted.forEach(h => {
+          const distText = h.dist > 1000 ? (h.dist/1000).toFixed(1) + 'km' : h.dist + 'm';
+          const mapLink = `https://map.kakao.com/link/map/${h.name},${h.lat},${h.lng}`;
+          html += `
+            <div class="hosp-item">
+              <div class="hosp-title"><span>${h.name}</span> <span>${distText}</span></div>
+              <div class="hosp-info">📞 ${h.phone} <br> 📍 ${h.addr}</div>
+              <a href="${mapLink}" target="_blank" class="hosp-link">🗺️ 길찾기 및 지도 보기</a>
+            </div>`;
+        });
+        list.innerHTML = html;
+      }, function(err) {
+        list.innerHTML = '<div style="color:#d98a00">위치 권한이 거부되어 기본 검색 링크를 제공합니다.</div>' +
+                         '<a href="https://map.kakao.com/?q=응급실" target="_blank" class="hosp-link">🏥 주변 응급실 검색</a>';
+      });
+    }
+  }
+
+  /* ================= 알림 팝업 호출 함수 수정 ================= */
+  window.dismiss = function(t){ $(t+'Alert').classList.remove('on'); $('hospArea').style.display='none'; };
+  
+  // 쓰러짐 3분 미해결 → 관리자·119 긴급 연락 (단말이 텔레그램 전송, 대시보드는 기록·방송)
+  function escalateFall(cid){
+    const c=cls(cid);
+    log('📲 긴급 호출 — '+c.name+' '+c.room+' 쓰러짐 3분 미응답 · 관리자/119 연락','hi',cid);
+    speak(c.name+'에서 쓰러진 사람이 3분간 응답하지 않았습니다. 관리자와 119에 긴급 연락을 전송합니다.');
+    beep(990);
+    showNearbyHospitals();
+  }
+
+  function fireAlert(kind,cid,from){
+    const c=cls(cid);
+    if(kind==='fire'){pushReq('fire',cid,from||'HuskyLens 색인식 / MQ-2');
+      speak(c.name+'에서 화재가 감지되었습니다. 침착하게 대피하세요.');beep(760);
+      log('🔥 화재 감지 (불꽃+가스 동시) — '+c.room,'hi',cid);
+      showEmergency('fire',cid); return;}
+    const el=$(kind+'Alert');el.classList.add('on');
+    $(kind+'Sub').textContent=from||(kind==='fall'?'HuskyLens 쓰러짐(ID2) 1초 이상 무동작':'교실 단말(TFT 터치)');
+    $(kind+'Loc').textContent='📍 '+c.name+' · '+c.room+' · 담임 '+c.teacher+' 선생님';
+    beep(kind==='fall'?990:760);
+    speak(c.name+'. '+(kind==='fall'?'쓰러진 사람이 감지되었습니다. 즉시 확인이 필요합니다.':'도움 요청이 접수되었습니다.'));
+    if(kind==='fall') showEmergency('fall',cid);
+    pushReq(kind,cid,from);
+    log((kind==='fall'?'🚨 쓰러짐 감지':'🆘 도움 요청')+' — '+c.room,'hi',cid);
+  }
+
+  /* ================= 교실 목록 ================= */
+  const LVT={safe:{t:'🛡️ 정상',c:'var(--g)'},caution:{t:'⚠️ 주의',c:'var(--y)'},
+    emergency:{t:'🔥 긴급',c:'var(--r)'},standby:{t:'⚪ 센서 미연결',c:'var(--dim)'}};
+  const NV=function(v,u){return v==null?'--':v+(u||'');};
+  function renderList(){
+    if(!U.role)return;
+    const vc=visibleClasses();
+    $('clist').innerHTML=vc.map(function(c){const s=ST[c.id];
+      return '<div class="cl '+s.level+(c.id===sel?' sel':'')+(s.evt?' has-evt':'')+'" data-id="'+c.id+'">'+
+        '<div class="flag">🔔</div>'+
+        '<div class="clh"><b>'+c.name+'</b><span class="tag'+(s.live?' live':'')+'">'+(s.live?'LIVE':'미연결')+'</span></div>'+
+        '<div class="clr">'+c.room+' · 담임 '+c.teacher+' 선생님</div>'+
+        '<div class="cls"><span>👥 '+NV(s.inside,'명')+'</span><span>🌡️ '+NV(s.temp,'°C')+'</span>'+
+          '<span>💨 '+NV(s.gas)+'</span></div>'+
+        '<div class="clst" style="color:'+LVT[s.level].c+'">'+LVT[s.level].t+'</div></div>';}).join('');
+    Array.prototype.forEach.call(document.querySelectorAll('.cl'),function(e){e.onclick=function(){
+      sel=e.dataset.id;renderList();render();renderTT();};});
+    var n={safe:0,caution:0,emergency:0,standby:0};CLASSES.forEach(function(c){n[ST[c.id].level]++;});
+    $('cnt-safe').textContent=n.safe;$('cnt-caution').textContent=n.caution;$('cnt-emergency').textContent=n.emergency;
+    $('cnt-standby').textContent=n.standby;
+    var lv=0;CLASSES.forEach(function(c){if(ST[c.id].live)lv++;});
+    $('lastSync').textContent=(lv?'실시간 수신 '+lv+'개 교실 · 갱신 '+now():'수신 중인 교실 없음 — USB 연결 필요');
+  }
+
+  /* ================= 상세 렌더 ================= */
+  function riskFromLevel(l){return{safe:8,caution:48,emergency:94}[l];}
+  const BAN={safe:{i:'🛡️',t:'정상 · 안전',m:'교실 환경이 안정적입니다'},
+    caution:{i:'⚠️',t:'주의 · 공기질 저하',m:'환기 팬이 자동 가동됩니다'},
+    emergency:{i:'🔥',t:'긴급 · 화재 감지',m:'경보·환기·창문 자동 대응 중'},
+    standby:{i:'⚪',t:'센서 미연결',m:'USB로 교실 단말을 연결하면 실측값이 표시됩니다'}};
+  function setAct(id,on,txt){$(id).classList.toggle('act-on',on);if(txt)$('t-'+id.slice(2)).textContent=txt;}
+  function render(){
+    if(!U.role)return;
+    const S=cur(),c=cls(sel),lv=S.level;
+    $('banner').className='banner '+lv;
+    $('bico').textContent=BAN[lv].i;$('blvl').textContent=c.name+' · '+BAN[lv].t;$('bmsg').textContent=c.room+' — '+BAN[lv].m;
+    const rk=riskFromLevel(lv);$('rnum').textContent=rk==null?'--':rk;
+    $('camWho').textContent=c.name+(S.live?'':' · 미연결');$('senWho').textContent=c.name+(S.live?' · LIVE':' · 미연결');
+    (function(){
+      const chip=function(el,txt,ok){const e=$(el);e.textContent=txt;
+        e.className='cnt'+(ok===true?' g':(ok===false?' r':''));};
+      chip('hl1chip','📷 화재캠 '+(S.hl1==null?'—':(S.hl1?'연결됨':'응답없음')), S.hl1==null?null:S.hl1);
+      chip('hl2chip','📷 사람캠 '+(S.hl2==null?'—':(S.hl2?'연결됨':'응답없음')), S.hl2==null?null:S.hl2);
+      chip('fallchip','🧍 자세 '+(!S.live?'—':(S.fall?'쓰러짐 감지':'정상')), !S.live?null:(S.fall?false:true));
+      var fj = !S.live ? '—'
+             : (S.cam&&S.gasfire) ? '불꽃+가스 → 화재'
+             : S.cam ? '불꽃만 (가스 대기)'
+             : S.gasfire ? '가스만 (불꽃 대기)' : '정상';
+      chip('firechip','🔥 화재판정 '+fj, !S.live?null:((S.cam&&S.gasfire)?false:true));
+    })();
+    $('actWho').textContent=(U.role==='student'?'학생 모드 · 읽기전용':c.name+' 수동 제어');
+    const NA=function(el,st){$(el).innerHTML='--';$(st).textContent='센서 미연결';$(st).style.color='var(--dim)';};
+    if(S.inside!=null)$('v-inside').innerHTML=S.inside+'<span class="su">명</span>';else NA('v-inside','s-inside');
+    if(S.inside!=null)$('s-inside').textContent='초음파 출입 카운트';
+    if(S.gas!=null){const hot=S.gas>=700,cau=S.gas>=400;$('v-gas').textContent=S.gas;
+      $('c-gas').classList.toggle('hot',hot);$('s-gas').textContent=hot?'위험 · 화재수준':cau?'주의':'양호';
+      $('s-gas').style.color=hot?'var(--r)':cau?'var(--y)':'var(--g)';}
+    else{$('c-gas').classList.remove('hot');NA('v-gas','s-gas');}
+    if(S.temp!=null){$('v-temp').innerHTML=S.temp+'<span class="su">°C</span>';
+      $('s-temp').textContent=S.temp>=28?'높음':(S.temp<=10?'낮음':'쾌적');$('s-temp').style.color=S.temp>=28?'var(--r)':'var(--g)';}
+    else NA('v-temp','s-temp');
+    if(S.humi!=null){$('v-humi').innerHTML=S.humi+'<span class="su">%</span>';
+      $('s-humi').textContent=S.humi>=70?'습함':(S.humi<=30?'건조':'쾌적');$('s-humi').style.color=(S.humi>=70||S.humi<=30)?'var(--y)':'var(--g)';}
+    else NA('v-humi','s-humi');
+    $('camBadge').textContent=S.inside==null?'👥 센서 미연결':'👥 실내 '+S.inside+'명';
+    const win=S.man.win!=null?S.man.win:S.win,fan=S.man.fan!=null?S.man.fan:S.fan,
+          li=S.man.light!=null?S.man.light:S.light,al=S.man.alarm!=null?S.man.alarm:S.alarm;
+    setAct('a-win',win,win?'열림':'닫힘');
+    setAct('a-fan',fan,fan?'가동 중':'정지');
+    setAct('a-light',li,li?'켜짐':'꺼짐');
+    setAct('a-alarm',al,al?'⚠ 경보 중':'정상');
+  }
+
+  /* ================= 연결 감시 (임의값 없음 · 아두이노 실측만) =================
+     데이터가 8초 이상 끊긴 교실은 자동으로 '미연결' 상태로 되돌립니다.        */
+  setInterval(function(){if(!U.role)return;var ch=false;
+    CLASSES.forEach(function(c){const s=ST[c.id];
+      if(s.live&&Date.now()-s.lastData>8000){s.live=false;s.level='standby';ch=true;
+        log('센서 데이터 수신 중단 — 미연결로 전환','hi',c.id);}});
+    if(ch){renderList();render();}},3000);
+
+  /* ================= 웹캠 · 오버레이 ================= */
+  let camOn=false,rec=false;
+  $('camBtn').onclick=async function(){
+    if(camOn){const s=$('cam').srcObject;if(s)s.getTracks().forEach(function(t){t.stop();});$('cam').srcObject=null;camOn=false;
+      $('camOff').style.display='grid';$('camBtn').textContent='📷 웹캠 켜기';$('camBtn').classList.remove('on');return;}
+    try{const st=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+      $('cam').srcObject=st;camOn=true;$('camOff').style.display='none';$('camBtn').textContent='📷 웹캠 끄기';$('camBtn').classList.add('on');log('웹캠 켜짐','ok',sel);}
+    catch(e){log('웹캠 접근 실패 — 권한을 허용하세요','hi');}
+  };
+  $('recBtn').onclick=function(){rec=!rec;$('recDot').classList.toggle('on',rec);$('recBtn').classList.toggle('on',rec);};
+  function drawOverlay(){
+    const cv=$('ov');if(cv.clientWidth){cv.width=cv.clientWidth;cv.height=cv.clientHeight;
+      const ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);
+      const S=U.role?cur():{box:[],fall:false};
+      const sx=cv.width/320,sy=cv.height/240;
+      S.box.forEach(function(b,i){const cx=b[0],cy=b[1],w=b[2],h=b[3];
+        const x=(cx-w/2)*sx,y=(cy-h/2)*sy,ww=w*sx,hh=h*sy;
+        const col=S.fall?'#e2492b':'#12a35c';ctx.strokeStyle=col;ctx.lineWidth=2.6;ctx.strokeRect(x,y,ww,hh);
+        ctx.fillStyle=col;ctx.font='bold 12px sans-serif';ctx.fillText((S.fall?'쓰러짐':'사람')+(i+1),x,Math.max(12,y-5));});}
+    requestAnimationFrame(drawOverlay);
+  }
+  requestAnimationFrame(drawOverlay);
+
+/* ================= 시리얼 수신 및 CSV 로직 ================= */
+  // ── 출입 기록: 원본 이벤트 + 시간대별 집계 ──
+  let csvData = "시간,교실,이벤트,실내인원\n";
+  const SLOT = {};   // { '1-1|09:00~09:30': {in:0,out:0,last:0} }
+  function slotKey(d,min){
+    const m=Math.floor((d.getHours()*60+d.getMinutes())/min)*min;
+    const p=function(x){return String(x).padStart(2,'0');};
+    const e=m+min;
+    return p(Math.floor(m/60))+':'+p(m%60)+'~'+p(Math.floor(e/60)%24)+':'+p(e%60);
+  }
+  function recordEntry(cid,diff,inside){
+    const d=new Date(), min=+($('slotSel')?$('slotSel').value:30);
+    const k=cid+'|'+slotKey(d,min);
+    if(!SLOT[k])SLOT[k]={in:0,out:0,last:0};
+    if(diff>0)SLOT[k].in+=diff; else SLOT[k].out+=-diff;
+    SLOT[k].last=inside;
+    csvData += d.toLocaleTimeString()+","+cls(cid).name+","+(diff>0?'입장':'퇴장')+","+inside+"\n";
+  }
+  function buildSlotCSV(){
+    let s="교실,시간대,입장(명),퇴장(명),순증감,시간대말 실내인원\n";
+    Object.keys(SLOT).sort().forEach(function(k){
+      const p=k.split('|'), v=SLOT[k];
+      s+=cls(p[0]).name+","+p[1]+","+v.in+","+v.out+","+(v.in-v.out)+","+v.last+"\n";
+    });
+    if(Object.keys(SLOT).length===0)s+="(기록 없음),,,,,\n";
+    return s+"\n[원본 이벤트 기록]\n"+csvData;
+  }
+
+  function ingest(o){
+    const cid=('class'in o&&ST[o.class])?o.class:sel; 
+    const S=ST[cid];S.lastData=Date.now();S.live=true;
+
+    // 단말이 보낸 교실로 화면을 자동 전환 (연동이 눈에 보이게)
+    if(cid!==sel){
+      if(U.role==='admin'||cid===U.classId){ sel=cid; log('📡 '+cls(cid).name+' 단말에서 데이터 수신 — 화면 전환','ok',cid); }
+      else if(!S._warned){ S._warned=true;
+        log('⚠️ 연결된 단말의 교실 ID가 '+cls(cid).name+' 입니다 — 스케치의 CLASS_ID를 내 교실로 바꾸세요','hi',cid); }
+    }
+    if('hl1'in o)S.hl1=!!o.hl1;
+    if('hl2'in o)S.hl2=!!o.hl2;
+    
+    // 인원 출입 로그 및 CSV 기록
+    if('inside'in o){
+      if(S.inside !== null && S.inside !== o.inside) {
+        let diff = o.inside - S.inside;
+        let action = diff > 0 ? "🏃 입장" : "🚶 퇴장";
+        
+        // 우측 하단 이벤트 로그에 기록
+        log(`🚪 출입 감지: ${action} (현재 실내 ${o.inside}명)`, diff > 0 ? 'hi' : 'ok', cid);
+        
+        // CSV 데이터 누적 (시간대별 집계 + 원본)
+        recordEntry(cid, diff, o.inside);
+      }
+      S.inside = o.inside;
+    }
+    if('cam'in o)S.cam=!!o.cam;
+    if('gasfire'in o)S.gasfire=!!o.gasfire;
+    if('ppl'in o)S.ppl=o.ppl;
+    if('box'in o&&Array.isArray(o.box))S.box=o.box;
+    if('air'in o)S.gas=o.air;
+    if('lux'in o)S.lux=o.lux;
+    if('temp'in o)S.temp=o.temp;
+    if('humi'in o)S.humi=o.humi;
+    if('level'in o){
+      if(o.level==='emergency'&&S.level!=='emergency')fireAlert('fire',cid);
+      S.level=o.level;
+      if('fan'in o)S.fan=!!o.fan;if('window'in o)S.win=!!o.window;
+      if('light'in o)S.light=!!o.light;if('alarm'in o)S.alarm=!!o.alarm;
+      S.man={win:null,fan:null,light:null,alarm:null};}
+    if('fall'in o){
+      S.fall=!!o.fall;
+      if(o.fall&&!S.lastFall){
+        fireAlert('fall',cid);
+        // 3분 안에 일어나지 않으면 관리자·119 긴급 연락
+        if(S.fallTimer)clearTimeout(S.fallTimer);
+        S.fallTimer=setTimeout(function(){ if(ST[cid].fall) escalateFall(cid); },3*60*1000);
+      }else if(!o.fall&&S.lastFall){
+        if(S.fallTimer){clearTimeout(S.fallTimer);S.fallTimer=null;
+          log('✅ 쓰러진 사람 응답·상태 회복 확인 — 긴급 연락 취소','ok',cid);
+          speak('상태가 회복되었습니다. 긴급 연락을 취소합니다.');}
+      }
+      S.lastFall=o.fall?1:0;
+    }
+    if('help'in o){if(o.help&&!S.lastHelp)fireAlert('help',cid,'교실 단말(TFT 터치)');S.lastHelp=o.help?1:0;}
+    pulse();renderList();render();
+  }
+  function pulse(){const d=$('dot');d.style.transform='scale(1.7)';clearTimeout(d._t);d._t=setTimeout(function(){d.style.transform='scale(1)';},150);}
+
+  let port,reader,writer,buf='';
+  function send(c){if(writer)writer.write(new TextEncoder().encode(c+'\n')).catch(function(){});}
+  async function readLoop(){try{while(port&&port.readable){const r=await reader.read();if(r.done)break;
+    buf+=new TextDecoder().decode(r.value);let nl;while((nl=buf.indexOf('\n'))>=0){const ln=buf.slice(0,nl).trim();buf=buf.slice(nl+1);
+      if(ln.charAt(0)==='{'){try{ingest(JSON.parse(ln));}catch(e){}}}}}catch(e){log('시리얼 수신 중단','hi');}discon();}
+  function discon(){$('dot').classList.remove('on');$('stat').textContent='연결 끊김';
+    $('conn').textContent='🔌 USB 연결';$('conn').classList.remove('on');
+    CLASSES.forEach(function(c){const s=ST[c.id];if(s.live){s.live=false;s.level='standby';}});
+    port=null;renderList();render();}
+  async function connect(){
+    if(!('serial'in navigator)){log('크롬/엣지에서 열어주세요 (Web Serial 미지원)','hi');return;}
+    if(port)return;
+    try{port=await navigator.serial.requestPort();await port.open({baudRate:115200});
+      writer=port.writable.getWriter();reader=port.readable.getReader();
+      $('dot').classList.add('on');$('stat').textContent='USB 연결됨';
+      $('conn').textContent='✅ 연결됨';$('conn').classList.add('on');
+      log('교실 단말 USB 연결 · 실시간 수신','ok',sel);readLoop();}
+    catch(e){log('연결이 취소되었거나 실패했습니다','hi');port=null;}
+  }
+  $('conn').onclick=connect;
+
+  /* ================= 수동 제어 ================= */
+  Array.prototype.forEach.call(document.querySelectorAll('.act[data-on]'),function(a){a.addEventListener('click',function(){
+    if(U.role==='student')return;
+    if(U.role==='teacher'&&sel!==U.classId){log('담임은 담당 학급만 제어할 수 있습니다','hi',sel);return;}
+    const S=cur(),on=!a.classList.contains('act-on'),k=a.id.slice(2);
+    S.man[k]=on;if(ST[sel].live)send(on?a.dataset.on:a.dataset.off);
+    log('수동 제어 · '+a.querySelector('b').textContent+(on?' ON':' OFF'),'',sel);render();});});
+
+  /* ================= 데모 ================= */
+  $('help').onclick=function(){fireAlert('help',U.classId||sel,'학생 대시보드 도움요청 버튼');};
+  $('d-fire').onclick=function(){const S=cur();
+    if(S.live){log('시연: 연결 중엔 아두이노 실측값이 우선됩니다','hi',sel);return;}
+    if(S.level==='emergency'){S.level='standby';S.alarm=false;S.fan=false;S.win=true;}
+    else{S.level='emergency';S.alarm=true;S.fan=true;S.win=false;fireAlert('fire',sel,'시연 트리거(센서값 아님)');}
+    renderList();render();};
+  $('d-fall').onclick=function(){const S=cur();
+    if(S.live){log('시연: 연결 중엔 아두이노 실측값이 우선됩니다','hi',sel);return;}
+    S.fall=true;fireAlert('fall',sel,'시연 트리거(센서값 아님)');render();};
+  $('d-help').onclick=function(){const others=CLASSES.filter(function(c){return c.id!==sel;});
+    const c=others[Math.floor(Math.random()*others.length)];fireAlert('help',c.id,'교실 단말(TFT 터치)');};
+  $('d-reset').onclick=function(){if(!ST[sel].live){log('카운트 리셋은 USB 연결된 교실에서만 가능합니다','hi',sel);return;}
+    send('RESET_CNT');cur().inside=0;renderList();render();log('출입 카운트 리셋 명령 전송','',sel);};
+
+  // [추가] CSV 다운로드 버튼 클릭 이벤트
+  $('d-csv').onclick=function(){
+    // 한글 깨짐 방지를 위해 BOM(\uFEFF) 추가
+    const blob = new Blob(["\uFEFF" + buildSlotCSV()], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '시간대별_출입기록.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    log('📥 출입 기록 CSV 파일 다운로드 완료', 'ok', sel);
+  };
+
+  /* ================= 음성 ================= */
+  let voiceOn=true;
+  function speak(t){if(!voiceOn)return;try{const u=new SpeechSynthesisUtterance(t);u.lang='ko-KR';u.rate=1;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+  $('voice').onclick=function(){voiceOn=!voiceOn;$('voice').textContent=voiceOn?'🔊 음성 ON':'🔇 음성 OFF';$('voice').classList.toggle('on',voiceOn);if(voiceOn)speak('음성 안내가 켜졌습니다');};
+
+  /* ================= 시간표 · 깨우기 · 이동수업 미이동 감지 ================= */
+  const SCHEDULE=[
+    {p:'1교시',s:'09:00',e:'09:50',subj:'국어',move:false},
+    {p:'2교시',s:'10:00',e:'10:50',subj:'과학 · 과학실 이동',move:true,to:'SCI'},
+    {p:'3교시',s:'11:00',e:'11:50',subj:'수학',move:false},
+    {p:'점심',  s:'12:00',e:'12:50',subj:'급식실 이동',move:true},
+    {p:'4교시',s:'13:00',e:'13:50',subj:'영어',move:false},
+    {p:'5교시',s:'14:00',e:'14:50',subj:'체육 · 체육관 이동',move:true},
+    {p:'6교시',s:'15:00',e:'15:50',subj:'사회',move:false}
+  ];
+  function hhmm(){const d=new Date();return d.toTimeString().slice(0,5);}
+  function curPeriodIdx(){const n=hhmm();for(var i=0;i<SCHEDULE.length;i++)if(n>=SCHEDULE[i].s&&n<SCHEDULE[i].e)return i;return -1;}
+  function renderTT(){
+    const ci=curPeriodIdx();
+    $('tt').innerHTML=SCHEDULE.map(function(s,i){
+      return '<div class="ttrow'+(i===ci?' cur':'')+'"><span class="tp">'+s.p+'</span>'+
+        '<span class="ts">'+s.subj+(s.move?' <span class="tm">이동</span>':'')+'</span>'+
+        '<span class="tt2">'+s.s+'~'+s.e+(i===ci?' · 진행중':'')+'</span></div>';}).join('');
+  }
+  renderTT();setInterval(renderTT,20000);
+  $('graceSel').onchange=function(){const v=+this.value;
+    $('graceTxt').textContent=v<60?v+'초':(v/60)+'분';};
+
+  let lastAlarm='';
+  setInterval(function(){if(!U.role||!$('alarmOn').checked)return;const n=hhmm();
+    if(n===$('alarmT').value&&n!==lastAlarm){lastAlarm=n;
+      speak('일어나세요. 수업 시간입니다. 자리에 앉아주세요.');beep(760);log('⏰ 깨우기 알람 · '+n,'ok',sel);}},10000);
+  $('wakeBtn').onclick=function(){wake(sel,'수동 방송');};
+  function wake(cid,why){const c=cls(cid);
+    speak(c.name+' 학생 여러분. 일어나세요. 수업을 준비해주세요.');beep(700);
+    log('🔊 깨우기 방송 송출 ('+why+')','ok',cid);}
+
+  let mvIdx=-1,mvStart=0,mvBase=0,mvFired=false;
+  setInterval(function(){
+    if(!U.role||!$('moveOn').checked)return;
+    const i=curPeriodIdx();
+    if(i!==mvIdx){
+      mvIdx=i;mvFired=false;
+      if(i>=0&&SCHEDULE[i].move){mvStart=Date.now();mvBase=cur().inside;
+        if(mvBase==null){mvFired=true;log('🚶 '+SCHEDULE[i].p+' 이동수업 — 초음파 인원 데이터 없음(미연결)으로 감시 생략','',sel);}
+        else log('🚶 이동수업 시작 · '+SCHEDULE[i].p+' ('+SCHEDULE[i].subj+') — 재실 '+mvBase+'명 기준 감시 시작','',sel);}
+      return;
+    }
+    if(i<0||!SCHEDULE[i].move||mvFired)return;
+    const grace=+$('graceSel').value*1000;
+    if(Date.now()-mvStart<grace)return;
+    const S=cur();
+    if(S.inside==null){mvFired=true;return;}
+    if(S.inside>=mvBase*0.5&&S.inside>0){
+      mvFired=true;
+      wake(sel,'이동수업 미이동 감지 · 재실 '+S.inside+'명');
+      log('⚠️ '+SCHEDULE[i].p+' 이동수업인데 재실 '+S.inside+'명 — 자동 깨우기 방송','hi',sel);
+      pushReq('help',sel,'이동수업 미이동 자동 감지 · '+SCHEDULE[i].p);
+    }else{mvFired=true;log('✅ '+SCHEDULE[i].p+' 이동 완료 (재실 '+S.inside+'명)','ok',sel);}
+  },3000);
+  $('d-move').onclick=function(){const i=curPeriodIdx();
+    const p=i>=0?SCHEDULE[i].p:'다음 교시';
+    const n=cur().inside==null?'--':cur().inside;
+    wake(sel,'이동수업 미이동 감지(시연) · 재실 '+n+'명');
+    log('⚠️ '+p+' 이동수업인데 재실 '+n+'명 — 자동 깨우기 방송 (시연)','hi',sel);
+    pushReq('help',sel,'이동수업 미이동 자동 감지(시연) · '+p);};
+
+  setInterval(function(){if(port&&Date.now()-ST[sel].lastData>5000)$('stat').textContent='연결됨 · 데이터 없음';},2000);
+  log('대시보드 준비 완료 · 로그인 후 시작하세요');
+</script>
+</body>
+</html>
