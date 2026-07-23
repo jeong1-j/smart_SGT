@@ -6,12 +6,12 @@
 <title>smart-SGT · 교실 안전 관제</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
   :root{
     /* 로고에서 뽑은 학교 팔레트 — 교복 네이비 · 황동 · 갱지 · 칠판 */
     --ink:#14213D; --brass:#C89A2B; --chalk:#2E4A42; --wood:#8A6A3E;
-    --disp:'Gowun Batang','Nanum Myeongjo',serif;
+    --disp:'Gowun Dodum','Noto Sans KR','Malgun Gothic',sans-serif;
     --ui:'Noto Sans KR','Malgun Gothic',-apple-system,sans-serif;
     --bg:#F4F1E6; --card:#ffffff; --card2:#FAF7EF;
     --line:#E4DDCB; --line2:#CFC5AB;
@@ -305,6 +305,45 @@
   .rp.sel{border-color:var(--brass);background:#FCF6E8;box-shadow:0 0 0 3px rgba(200,154,43,.18)}
 
   @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+
+  /* ===== 이벤트 기록 (전체 폭) ===== */
+  .logsec{margin-top:14px}
+  .logsec .ct{gap:10px}
+  .logcount{font-size:11px;font-weight:800;color:var(--b);background:var(--bs);border-radius:20px;padding:3px 10px}
+  .logfilters{display:flex;gap:5px;flex-wrap:wrap}
+  .fchip{border:1px solid var(--line);background:var(--card2);color:var(--mut);border-radius:20px;
+    padding:5px 12px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:var(--ui);transition:.15s}
+  .fchip:hover{border-color:var(--brass);color:var(--ink)}
+  .fchip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .log{height:290px;overflow-y:auto;font-family:var(--ui);font-size:12.5px;display:block;gap:0;
+    border:1px solid var(--line);border-radius:12px;background:var(--card2);padding:4px}
+  .log .li{display:flex;gap:10px;align-items:flex-start;padding:8px 11px;border-radius:8px;
+    border-bottom:1px dashed var(--line);color:var(--tx);line-height:1.5}
+  .log .li:last-child{border-bottom:none}
+  .log .li:hover{background:#fff}
+  .log .lt{font-family:ui-monospace,monospace;font-size:11px;color:var(--dim);flex-shrink:0;min-width:60px;padding-top:1px}
+  .log .lc{flex-shrink:0;font-size:10.5px;font-weight:800;color:var(--b);background:var(--bs);
+    border-radius:6px;padding:2px 7px;line-height:1.6}
+  .log .lm{flex:1}
+  .log .li.hi{background:var(--rs);color:#8E2A1C;font-weight:600}
+  .log .li.hi:hover{background:#F9DDD6}
+  .log .li.ok{color:var(--g)}
+  .log .li.hide{display:none}
+  .log .empty{padding:22px 0}
+  .logsec select{background:#fff;border:1px solid var(--line2);color:var(--tx);border-radius:9px;
+    padding:6px 9px;font-size:11.5px;font-family:var(--ui)}
+
+  /* 전체적으로 덜 딱딱하게 */
+  body{line-height:1.55}
+  .card{border-radius:18px}
+  .sc{border-radius:16px}
+  .act{border-radius:15px}
+  .btn{border-radius:11px;font-weight:600}
+  .pill{border-radius:20px}
+  .cl{border-radius:6px 6px 16px 16px}
+  .banner{border-radius:20px}
+  .card .ct{font-size:13px;letter-spacing:-.1px}
+  h1,h2,.banner .btxt b,.cl .clh b,.schoolbar .sbt,.lbox .lh h2{letter-spacing:0}
 </style>
 </head>
 <body>
@@ -479,7 +518,6 @@
               <option value="180" selected>3분</option>
               <option value="300">5분</option>
             </select>
-            <button class="btn sm" id="d-move">🚶 미이동 시연</button>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:9px;margin-top:12px;flex-wrap:wrap">
@@ -490,24 +528,36 @@
       </div>
 
       <div class="card">
-        <div class="ct"><span class="ci">📝</span>이벤트 로그 (학교 전체)</div>
-        <div class="log" id="log"></div>
-        <div class="demo" style="margin-top:12px">
-          <button class="btn sm" id="d-fire">🔥 화재 시연</button>
-          <button class="btn sm" id="d-fall">🚨 쓰러짐 시연</button>
-          <button class="btn sm" id="d-help">🆘 타교실 도움요청</button>
-          <button class="btn sm" id="d-reset">↺ 카운트 리셋</button>
-          <!-- [추가] CSV 다운로드 버튼 -->
-          <select id="slotSel" style="background:#fff;border:1px solid var(--line2);color:var(--tx);border-radius:9px;padding:5px 8px;font-size:11.5px">
-            <option value="10">10분 단위</option>
-            <option value="30" selected>30분 단위</option>
-            <option value="60">1시간 단위</option>
-          </select>
-          <button class="btn sm" id="d-csv" style="background:#12a35c; color:white; border:none;">📥 시간대별 CSV</button>
-        </div>
       </div>
     </div>
   </div>
+
+  <!-- ===== 이벤트 기록 (전체 폭) ===== -->
+  <section class="card logsec">
+    <div class="ct"><span class="ci">📝</span>이벤트 기록
+      <span class="logcount" id="logCount">0건</span>
+      <span class="logfilters" id="logFilters">
+        <button class="fchip on" data-cat="all">전체</button>
+        <button class="fchip" data-cat="enter">🚪 출입</button>
+        <button class="fchip" data-cat="detect">👁️ 감지</button>
+        <button class="fchip" data-cat="alert">🚨 알림</button>
+        <button class="fchip" data-cat="ctrl">🎛️ 조작</button>
+      </span>
+      <span style="margin-left:auto;display:flex;gap:7px;flex-wrap:wrap;align-items:center">
+        <select id="slotSel"><option value="10">10분 단위</option><option value="30" selected>30분 단위</option><option value="60">1시간 단위</option></select>
+        <button class="btn sm" id="d-csv" style="background:var(--g);color:#fff;border-color:var(--g)">📥 기록 CSV 저장</button>
+        <button class="btn sm" id="d-clear">🧹 화면 비우기</button>
+      </span></div>
+    <div class="log" id="log"></div>
+    <div class="demo" style="margin-top:12px;border-top:1px dashed var(--line);padding-top:11px">
+      <span style="font-size:11px;color:var(--dim);align-self:center;margin-right:3px">시연용</span>
+      <button class="btn sm" id="d-fire">🔥 화재</button>
+      <button class="btn sm" id="d-fall">🚨 쓰러짐</button>
+      <button class="btn sm" id="d-help">🆘 타교실 도움요청</button>
+      <button class="btn sm" id="d-move">🚶 미이동</button>
+      <button class="btn sm" id="d-reset">↺ 카운트 리셋</button>
+    </div>
+  </section>
 
   <div class="foot">
     크롬/엣지에서 <b>USB 연결</b>로 교실 단말과 실시간 연동됩니다 · USB로 들어온 실측값은 <b>선택된 교실</b>에 반영됩니다<br>
@@ -543,9 +593,24 @@
   function visibleClasses(){return U.role==='admin'?CLASSES:CLASSES.filter(function(c){return c.id===U.classId;});}
 
   function now(){return new Date().toTimeString().slice(0,8);}
-  function log(m,c,cid){const l=$('log');const e=document.createElement('div');e.className='li '+(c||'');
-    e.innerHTML='<span class="lt">'+now()+'</span>'+(cid?'<span class="lc">['+cls(cid).name+']</span>':'')+'<span>'+m+'</span>';
-    l.insertBefore(e,l.firstChild);while(l.children.length>60)l.removeChild(l.lastChild);}
+  const LOGALL=[];   // CSV 저장용 전체 기록
+  let logFilter='all';
+  function log(m,c,cid,cat){
+    cat = cat || 'sys';
+    const t=now(), room=cid?cls(cid).name:'';
+    LOGALL.push({t:t,room:room,cat:cat,msg:String(m).replace(/[",\n]/g,' ')});
+    const l=$('log');const e=document.createElement('div');
+    e.className='li '+(c||'')+(logFilter!=='all'&&logFilter!==cat?' hide':'');
+    e.dataset.cat=cat;
+    e.innerHTML='<span class="lt">'+t+'</span>'+(room?'<span class="lc">'+room+'</span>':'')+'<span class="lm">'+m+'</span>';
+    l.insertBefore(e,l.firstChild);
+    while(l.children.length>250)l.removeChild(l.lastChild);
+    const cnt=$('logCount'); if(cnt) cnt.textContent=LOGALL.length+'건';
+  }
+  function applyLogFilter(){
+    Array.prototype.forEach.call($('log').children,function(e){
+      e.classList.toggle('hide', logFilter!=='all' && e.dataset.cat!==logFilter);});
+  }
 
   /* ================= 로그인 ================= */
   let loginRole='teacher';
@@ -588,7 +653,7 @@
     log(U.name+' 로그인 · '+({admin:'관리자 모드',teacher:'담임 모드',student:'학생 모드'}[U.role]),'ok');
     renderList();render();renderReq();renderTT();
   }
-  $('logout').onclick=function(){U.role=null;document.body.className='';$('login').classList.remove('off');
+  $('logout').onclick=function(){log('↩ '+U.name+' 로그아웃','','', 'sys');U.role=null;document.body.className='';$('login').classList.remove('off');
     $('lerr').textContent='';};
 
   /* ================= 알림 · 도움요청 접수함 ================= */
@@ -613,7 +678,7 @@
         '<button class="rx" onclick="clearReq('+REQ.indexOf(r)+')">처리</button></div>';}).join('');
   }
   window.clearReq=function(i){const r=REQ[i];if(!r)return;REQ.splice(i,1);
-    log('요청 처리 완료 · '+KIND[r.kind].t,'ok',r.cid);
+    log('✅ 요청 처리 완료 — '+KIND[r.kind].t,'ok',r.cid,'ctrl');
     if(!REQ.filter(function(x){return x.cid===r.cid;}).length)ST[r.cid].evt=false;
     renderReq();renderList();};
 
@@ -631,7 +696,7 @@
       const r=await fetch('https://api.telegram.org/bot'+TG.token+'/sendMessage',{
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({chat_id:TG.chat,text:text,disable_web_page_preview:true})});
-      if(r.ok){ log('📲 텔레그램 상세 메시지 전송 완료','ok'); return true; }
+      if(r.ok){ log('📲 텔레그램 상세 메시지 전송 완료','ok','','alert'); return true; }
       log('텔레그램 전송 실패 (토큰/ChatID 확인)','hi'); return false;
     }catch(e){ log('텔레그램 전송 실패 (네트워크)','hi'); return false; }
   }
@@ -718,7 +783,7 @@
       EMG.list=raw.map(function(h){h.dist=distM(EMG.pos.lat,EMG.pos.lng,h.lat,h.lng);return h;})
                   .sort(function(a,b){return a.dist-b.dist;});
       emgRender();
-      log('🏥 주변 '+(kind==='fire'?'소방서':'의료기관')+' '+EMG.list.length+'곳 조회 완료','ok',EMG.cid);
+      log('🏥 주변 '+(kind==='fire'?'소방서':'응급의료기관')+' '+EMG.list.length+'곳 조회 완료','ok',EMG.cid,'alert');
     }catch(e){
       $('emgList').innerHTML='<div class="empty">위치 권한이 거부되었거나 조회에 실패했습니다 — <a href="https://map.kakao.com/?q='+
         (kind==='fire'?'소방서':'응급실')+'" target="_blank">지도에서 직접 검색</a></div>';
@@ -792,7 +857,7 @@
     const c=cls(cid);
     if(kind==='fire'){pushReq('fire',cid,from||'HuskyLens 색인식 / MQ-2');
       speak(c.name+'에서 화재가 감지되었습니다. 침착하게 대피하세요.');beep(760);
-      log('🔥 화재 감지 (불꽃+가스 동시) — '+c.room,'hi',cid);
+      log('🔥 화재 감지 — 불꽃과 가스 동시 확인 · '+c.room,'hi',cid,'alert');
       showEmergency('fire',cid); return;}
     const el=$(kind+'Alert');el.classList.add('on');
     $(kind+'Sub').textContent=from||(kind==='fall'?'HuskyLens 쓰러짐(ID2) 1초 이상 무동작':'교실 단말(TFT 터치)');
@@ -801,7 +866,7 @@
     speak(c.name+'. '+(kind==='fall'?'쓰러진 사람이 감지되었습니다. 즉시 확인이 필요합니다.':'도움 요청이 접수되었습니다.'));
     if(kind==='fall') showEmergency('fall',cid);
     pushReq(kind,cid,from);
-    log((kind==='fall'?'🚨 쓰러짐 감지':'🆘 도움 요청')+' — '+c.room,'hi',cid);
+    log((kind==='fall'?'🚨 낙상 감지 — 1초 이상 무동작':'🆘 도움 요청 접수')+' · '+c.room,'hi',cid,'alert');
   }
 
   /* ================= 교실 목록 ================= */
@@ -891,8 +956,8 @@
     if(camOn){const s=$('cam').srcObject;if(s)s.getTracks().forEach(function(t){t.stop();});$('cam').srcObject=null;camOn=false;
       $('camOff').style.display='grid';$('camBtn').textContent='📷 웹캠 켜기';$('camBtn').classList.remove('on');return;}
     try{const st=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-      $('cam').srcObject=st;camOn=true;$('camOff').style.display='none';$('camBtn').textContent='📷 웹캠 끄기';$('camBtn').classList.add('on');log('웹캠 켜짐','ok',sel);}
-    catch(e){log('웹캠 접근 실패 — 권한을 허용하세요','hi');}
+      $('cam').srcObject=st;camOn=true;$('camOff').style.display='none';$('camBtn').textContent='📷 웹캠 끄기';$('camBtn').classList.add('on');log('📷 웹캠 켜기','ok',sel,'ctrl');}
+    catch(e){log('웹캠을 켤 수 없습니다 — 브라우저에서 카메라 권한을 허용하세요','hi','','ctrl');}
   };
   $('recBtn').onclick=function(){rec=!rec;$('recDot').classList.toggle('on',rec);$('recBtn').classList.toggle('on',rec);};
   function drawOverlay(){
@@ -933,7 +998,12 @@
       s+=cls(p[0]).name+","+p[1]+","+v.in+","+v.out+","+(v.in-v.out)+","+v.last+"\n";
     });
     if(Object.keys(SLOT).length===0)s+="(기록 없음),,,,,\n";
-    return s+"\n[원본 이벤트 기록]\n"+csvData;
+    s+="\n[출입 상세 기록]\n"+csvData;
+    s+="\n[전체 이벤트 기록]\n시간,교실,분류,내용\n";
+    const CN={enter:'출입',detect:'감지',alert:'알림',ctrl:'조작',sys:'시스템'};
+    LOGALL.slice().reverse().forEach(function(e){
+      s+=e.t+","+(e.room||'-')+","+(CN[e.cat]||e.cat)+","+e.msg+"\n";});
+    return s;
   }
 
   function ingest(o){
@@ -946,8 +1016,8 @@
       else if(!S._warned){ S._warned=true;
         log('⚠️ 연결된 단말의 교실 ID가 '+cls(cid).name+' 입니다 — 스케치의 CLASS_ID를 내 교실로 바꾸세요','hi',cid); }
     }
-    if('hl1'in o)S.hl1=!!o.hl1;
-    if('hl2'in o)S.hl2=!!o.hl2;
+    if('hl1'in o){ if(S.hl1!==null && S.hl1!==!!o.hl1) log(o.hl1?'📷 화재 카메라 연결 복구':'📷 화재 카메라 응답 없음 — A4/A5 배선 확인', o.hl1?'ok':'hi', cid,'detect'); S.hl1=!!o.hl1; }
+    if('hl2'in o){ if(S.hl2!==null && S.hl2!==!!o.hl2) log(o.hl2?'📷 사람 카메라 연결 복구':'📷 사람 카메라 응답 없음 — T→D0 / R→D1 확인', o.hl2?'ok':'hi', cid,'detect'); S.hl2=!!o.hl2; }
     
     // 인원 출입 로그 및 CSV 기록
     if('inside'in o){
@@ -955,16 +1025,17 @@
         let diff = o.inside - S.inside;
         let action = diff > 0 ? "🏃 입장" : "🚶 퇴장";
         
-        // 우측 하단 이벤트 로그에 기록
-        log(`🚪 출입 감지: ${action} (현재 실내 ${o.inside}명)`, diff > 0 ? 'hi' : 'ok', cid);
+        log('🚪 '+(diff>0?'입장':'퇴장')+' '+Math.abs(diff)+'명 — 현재 실내 '+o.inside+'명',
+            diff>0?'ok':'', cid, 'enter');
         
         // CSV 데이터 누적 (시간대별 집계 + 원본)
         recordEntry(cid, diff, o.inside);
       }
       S.inside = o.inside;
     }
-    if('cam'in o)S.cam=!!o.cam;
-    if('gasfire'in o)S.gasfire=!!o.gasfire;
+    if('cam'in o){ if(S.cam!==!!o.cam) log(o.cam?'🔥 불꽃(색) 감지됨 — 가스 확인 중':'불꽃 신호 사라짐', o.cam?'hi':'', cid,'detect'); S.cam=!!o.cam; }
+    if('gasfire'in o){ if(S.gasfire!==!!o.gasfire) log(o.gasfire?'💨 가스 농도 화재 수준 도달':'💨 가스 농도 정상 회복', o.gasfire?'hi':'ok', cid,'detect'); S.gasfire=!!o.gasfire; }
+    if('temp'in o && S.temp!=null && Math.abs(o.temp-S.temp)>=2) log('🌡️ 온도 변화 '+S.temp+'°C → '+o.temp+'°C','',cid,'detect');
     if('ppl'in o)S.ppl=o.ppl;
     if('box'in o&&Array.isArray(o.box))S.box=o.box;
     if('air'in o)S.gas=o.air;
@@ -973,9 +1044,15 @@
     if('humi'in o)S.humi=o.humi;
     if('level'in o){
       if(o.level==='emergency'&&S.level!=='emergency')fireAlert('fire',cid);
+      if(S.level!=='standby' && S.level!==o.level){
+        const LN={safe:'🛡️ 정상',caution:'⚠️ 주의',emergency:'🔥 긴급'};
+        log('상태 변경 '+(LN[S.level]||S.level)+' → '+(LN[o.level]||o.level), o.level==='safe'?'ok':'hi', cid,'detect');
+      }
       S.level=o.level;
-      if('fan'in o)S.fan=!!o.fan;if('window'in o)S.win=!!o.window;
-      if('light'in o)S.light=!!o.light;if('alarm'in o)S.alarm=!!o.alarm;
+      if('fan'in o){ if(S.fan!==!!o.fan) log('🌀 환기 팬 자동 '+(o.fan?'가동':'정지'),'',cid,'ctrl'); S.fan=!!o.fan; }
+      if('window'in o){ if(S.win!==!!o.window) log('🪟 창문 자동 '+(o.window?'열림':'닫힘'),'',cid,'ctrl'); S.win=!!o.window; }
+      if('light'in o){ if(S.light!==!!o.light) log('💡 교실 전등 '+(o.light?'켜짐 (재실 확인)':'꺼짐 (실내 0명)'),'',cid,'ctrl'); S.light=!!o.light; }
+      if('alarm'in o){ if(S.alarm!==!!o.alarm) log('🔔 화재 경보 '+(o.alarm?'울림':'해제'), o.alarm?'hi':'ok', cid,'ctrl'); S.alarm=!!o.alarm; }
       S.man={win:null,fan:null,light:null,alarm:null};}
     if('fall'in o){
       S.fall=!!o.fall;
@@ -1012,7 +1089,7 @@
       writer=port.writable.getWriter();reader=port.readable.getReader();
       $('dot').classList.add('on');$('stat').textContent='USB 연결됨';
       $('conn').textContent='✅ 연결됨';$('conn').classList.add('on');
-      log('교실 단말 USB 연결 · 실시간 수신','ok',sel);readLoop();}
+      log('🔌 교실 단말 USB 연결 — 실시간 수신 시작','ok',sel,'sys');readLoop();}
     catch(e){log('연결이 취소되었거나 실패했습니다','hi');port=null;}
   }
   $('conn').onclick=connect;
@@ -1023,7 +1100,7 @@
     if(U.role==='teacher'&&sel!==U.classId){log('담임은 담당 학급만 제어할 수 있습니다','hi',sel);return;}
     const S=cur(),on=!a.classList.contains('act-on'),k=a.id.slice(2);
     S.man[k]=on;if(ST[sel].live)send(on?a.dataset.on:a.dataset.off);
-    log('수동 제어 · '+a.querySelector('b').textContent+(on?' ON':' OFF'),'',sel);render();});});
+    log('🎛️ '+U.name+' 수동 제어 — '+a.querySelector('b').textContent+(on?' 켜기':' 끄기'),'',sel,'ctrl');render();});});
 
   /* ================= 데모 ================= */
   $('help').onclick=function(){fireAlert('help',U.classId||sel,'학생 대시보드 도움요청 버튼');};
@@ -1038,7 +1115,7 @@
   $('d-help').onclick=function(){const others=CLASSES.filter(function(c){return c.id!==sel;});
     const c=others[Math.floor(Math.random()*others.length)];fireAlert('help',c.id,'교실 단말(TFT 터치)');};
   $('d-reset').onclick=function(){if(!ST[sel].live){log('카운트 리셋은 USB 연결된 교실에서만 가능합니다','hi',sel);return;}
-    send('RESET_CNT');cur().inside=0;renderList();render();log('출입 카운트 리셋 명령 전송','',sel);};
+    send('RESET_CNT');cur().inside=0;renderList();render();log('↺ 실내 인원 카운트를 0으로 초기화','',sel,'ctrl');};
 
   // [추가] CSV 다운로드 버튼 클릭 이벤트
   $('d-csv').onclick=function(){
@@ -1050,7 +1127,7 @@
     a.download = '시간대별_출입기록.csv';
     a.click();
     URL.revokeObjectURL(url);
-    log('📥 출입 기록 CSV 파일 다운로드 완료', 'ok', sel);
+    log('📥 기록 CSV 저장 완료','ok',sel,'ctrl');
   };
 
   /* ================= 음성 ================= */
@@ -1084,7 +1161,7 @@
   let lastAlarm='';
   setInterval(function(){if(!U.role||!$('alarmOn').checked)return;const n=hhmm();
     if(n===$('alarmT').value&&n!==lastAlarm){lastAlarm=n;
-      speak('일어나세요. 수업 시간입니다. 자리에 앉아주세요.');beep(760);log('⏰ 깨우기 알람 · '+n,'ok',sel);}},10000);
+      speak('일어나세요. 수업 시간입니다. 자리에 앉아주세요.');beep(760);log('⏰ 깨우기 알람 방송 — '+n,'ok',sel,'ctrl');}},10000);
   $('wakeBtn').onclick=function(){wake(sel,'수동 방송');};
   function wake(cid,why){const c=cls(cid);
     speak(c.name+' 학생 여러분. 일어나세요. 수업을 준비해주세요.');beep(700);
@@ -1119,6 +1196,13 @@
     wake(sel,'이동수업 미이동 감지(시연) · 재실 '+n+'명');
     log('⚠️ '+p+' 이동수업인데 재실 '+n+'명 — 자동 깨우기 방송 (시연)','hi',sel);
     pushReq('help',sel,'이동수업 미이동 자동 감지(시연) · '+p);};
+
+  /* ===== 이벤트 기록 필터 · 비우기 ===== */
+  Array.prototype.forEach.call(document.querySelectorAll('#logFilters .fchip'),function(b){
+    b.onclick=function(){
+      Array.prototype.forEach.call(document.querySelectorAll('#logFilters .fchip'),function(x){x.classList.remove('on');});
+      b.classList.add('on'); logFilter=b.dataset.cat; applyLogFilter();};});
+  $('d-clear').onclick=function(){ $('log').innerHTML=''; log('화면의 기록을 지웠습니다 (저장본은 유지)','','', 'sys'); };
 
   setInterval(function(){if(port&&Date.now()-ST[sel].lastData>5000)$('stat').textContent='연결됨 · 데이터 없음';},2000);
   log('대시보드 준비 완료 · 로그인 후 시작하세요');
